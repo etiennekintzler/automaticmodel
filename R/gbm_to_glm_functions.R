@@ -18,6 +18,7 @@ cleanData <- function(data, n.levels = 20)
 #' @param data the dataset
 #'
 #' @return explain the return
+#'
 #' @importFrom magrittr "%>%"
 #' @export
 lassoSelection <- function(data, type.measure = "mse", family = "gaussian", offset, lambda = "lambda.min",

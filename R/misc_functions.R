@@ -1,5 +1,6 @@
 #function plot interact
-plotInteract <- function(x, y, data, rev = NULL, cut.x = NULL, cut.trace = NULL, simplify = NULL)
+plotInteract <- function(x, y, data, rev = NULL, cut.x = NULL, cut.trace = NULL,
+                         simplify = NULL)
 {
   if (is.null(rev)) {
     if(is.factor(data[, x[1]])){

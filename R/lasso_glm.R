@@ -17,7 +17,7 @@
 #'
 #' Finding the best model using 5-fold cross-validation using Lasso-GLM model.
 #'
-#' @param data the dataset
+#'#' @param data the dataset
 #' @param type.measure the performance criterion use to perform cross-validation. Available values are 'mse', 'mae' (for regression), 'auc' (for classification) and deviance.
 #' @param family distribution of the target. Available family are 'gaussian', 'gamma', 'binomial', 'multinomial', 'cox', 'mgaussian'.
 #' @param offset name of the offset (if used)
@@ -39,8 +39,10 @@
 #'              y = mtcars$mpg)
 #' lassoSelection(data, type.measure = 'mse', family = 'gaussian', lambda = 'lambda.min', train.fraction = 1)
 #' @export
-lassoSelection <- function(data = data, type.measure = "mse", family = "gaussian", offset = NULL, lambda = "lambda.min",
-                    train.fraction = .8, seq.lambda = NULL){
+lassoSelection <- function(data = data, type.measure = "mse",
+                           family = "gaussian", offset = NULL,
+                           lambda = "lambda.min", train.fraction = 1,
+                           seq.lambda = NULL){
   data <- na.omit(data)
   Xy <- model.matrix( ~ . - 1 , data = data)
   train <- sample(nrow(data), floor(train.fraction * nrow(data)))
@@ -59,8 +61,8 @@ lassoSelection <- function(data = data, type.measure = "mse", family = "gaussian
   if (is.null(offset)) {
 
     ### Launching Cross validation LASSO ###
-    cvfit      <- do.call(cv.lasso, c(list(x = subset(Xy[train, ], select = -c(y)),
-                                           y = Xy[train, "y"]), cv.control))
+    cvfit <- do.call(cv.lasso, c(list(x = subset(Xy[train, ], select = -c(y)),
+                                      y = Xy[train, "y"]), cv.control))
     #plot(cvfit)
     best.model <- coef(cvfit, s = lambda)
 
@@ -71,11 +73,12 @@ lassoSelection <- function(data = data, type.measure = "mse", family = "gaussian
       i.best <- which(best.model[, 1]!=0)
       matching.index <- !is.na(charmatch(colnames(data), names(i.best)))
     } else {
-      i.best               <- best.model@i
-      matching.index       <- !is.na(charmatch(colnames(data), best.model@Dimnames[[1]][i.best + 1]))
+      i.best          <- best.model@i
+      matching.index  <- !is.na(charmatch(colnames(data),
+                                          best.model@Dimnames[[1]][i.best + 1]))
     }
 
-    best.features        <- colnames(data)[matching.index]
+    best.features         <- colnames(data)[matching.index]
     non.selected.features <- colnames(data)[!matching.index]
 
     paste0('#features', length(best.features))
@@ -88,10 +91,12 @@ lassoSelection <- function(data = data, type.measure = "mse", family = "gaussian
   } else {
 
     ### Launching Cross validation LASSO ###
-    cvfit     <- do.call(cv.lasso, c(list(x = subset(Xy[train, ], select = -c(get(offset), y)),
-                                          y = Xy[train, "y"], offset = Xy[train, offset]), cv.control))
+    cvfit <- do.call(what = cv.lasso, args = c(list(x = subset(Xy[train, ],
+                                                               select = -c(get(offset), y)),
+                                                    y = Xy[train, "y"],
+                                                    offset = Xy[train, offset]),
+                                               cv.control))
 
-    plot(cvfit)
     best.model <- coef(cvfit, s = lambda)
 
     ### string work ###
@@ -99,10 +104,11 @@ lassoSelection <- function(data = data, type.measure = "mse", family = "gaussian
       i.best <- which(best.model[, 1]!=0)
       matching.index <- !is.na(charmatch(colnames(data), names(i.best)))
     } else {
-      i.best               <- best.model@i
-      matching.index       <- !is.na(charmatch(colnames(data), best.model@Dimnames[[1]][i.best + 1]))
+      i.best         <- best.model@i
+      matching.index <- !is.na(charmatch(colnames(data),
+                                         best.model@Dimnames[[1]][i.best + 1]))
     }
-    best.features        <- colnames(data)[matching.index]
+    best.features         <- colnames(data)[matching.index]
     non.selected.features <- colnames(data)[!matching.index]
 
     paste0('#features', length(best.features))
@@ -111,13 +117,16 @@ lassoSelection <- function(data = data, type.measure = "mse", family = "gaussian
       stop('Lasso has not selected any feature')
     }
     #cat(paste0("\t", best.features, "\n"))
-    concatenate.features <- paste(paste(best.features, collapse = '+'), paste0("offset(", offset, ")"), sep = "+")
+    concatenate.features <- paste(paste(best.features, collapse = '+'),
+                                  paste0("offset(", offset, ")"), sep = "+")
   }
 
   formula.best <- paste('y', concatenate.features, sep = '~')
   pred <- predict(cvfit, newx = subset(Xy, select = -y))
   true <- Xy[, 'y']
-  output <- list(formula = formula.best, cvfit = cvfit, prediction = pred, y = true, selected_features = best.features, non_selected_features = non.selected.features)
+  output <- list(formula = formula.best, cvfit = cvfit, prediction = pred,
+                 y = true, selected_features = best.features,
+                 non_selected_features = non.selected.features)
 
   class(output) <- 'LassoGLM'
   return(output)
@@ -145,12 +154,15 @@ plot.LassoGLM <- function(self) {
 }
 
 summary.LassoGLM <- function(self){
-  max.length                         <- max(length(self$non_selected_features), length(self$selected_features))
+  max.length                         <- max(length(self$non_selected_features),
+                                            length(self$selected_features))
   length(self$selected_features)     <- max.length
   length(self$non_selected_features) <- max.length
   self$selected_features[is.na(self$selected_features)] <- ''
   self$non_selected_features[is.na(self$non_selected_features)] <- ''
-  knitr::kable(data.frame('Selected Features' = self$selected_features, 'Not Selected Features' = self$non_selected_features), caption = 'Features Selection', format = 'pandoc')
+  knitr::kable(data.frame('Selected Features' = self$selected_features,
+                          'Not Selected Features' = self$non_selected_features),
+               caption = 'Features Selection', format = 'pandoc')
 }
 
 
@@ -160,7 +172,9 @@ perf.LassoGLM <- function(self)
 {
   rmse <- rmse(pred = self$prediction, true = self$y)
   gini <- axaml::kpi_gini(predrisk = self$prediction, truerisk = self$y )
-  (knitr::kable(data.frame('Root Mean Squared error' = rmse, 'Gini index' = as.numeric(gini)), caption = 'Performances of Lasso-GLM model'))
+  knitr::kable(data.frame('Root Mean Squared error' = rmse,
+                          'Gini index' = as.numeric(gini)),
+               caption = 'Performances of Lasso-GLM model')
   #invisible(list('Root_mean_squared_error' = rmse, 'Gini_index' = as.numeric(gini)))
 }
 

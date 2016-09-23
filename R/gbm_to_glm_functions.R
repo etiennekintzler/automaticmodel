@@ -1,8 +1,16 @@
-cleanData <- function(data, n.levels = 20)
+#' Cleaning the data
+#'
+#' Removing variables with too much levels, too much NA, too few variance
+#' @param data the dataset
+#' @param n.levels the maximum number of levels allowed
+#' @param per.na the maximum percentage of missing data allowed for a variable
+#' @return A clean and neat dataset
+#' @export
+cleanData <- function(data, n.levels = 20, perc.na = 0.2)
 {
   novar.col      <- sapply(data, function(x) length(unique(x)) <= 1)
   high.levels    <- sapply(data, function(x) length(levels(x)) > n.levels) #justifier dans rapport
-  na.columns     <- sapply(data, function(x) sum(is.na(x)) > 0.2 * nrow(data))
+  na.columns     <- sapply(data, function(x) sum(is.na(x)) > perc.na * nrow(data))
   date.col       <- grepl(pattern = 'date', x = colnames(data))
   keep.columns   <- !(high.levels | na.columns | novar.col | date.col)
   return(data[, keep.columns])
@@ -110,6 +118,13 @@ plotLambda <- function(x, ...) UseMethod('plotLambda')
 plotLambda.LassoGLM <- function(self) {
   plot(self$cvfit)
 }
+
+#' Plotting of the best Lasso selected model
+#'
+#' Plots the Gini gain curve the best model selected by Lasso-GLM procedure
+#'
+#'
+#' @export
 
 plot.LassoGLM <- function(self) {
   axaml::plotgain(predrisk = self$prediction, truerisk = self$y, return_val = T)$plot

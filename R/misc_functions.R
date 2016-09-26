@@ -1,17 +1,37 @@
+
+
+plotInteractionsMatrix <- function(mat.inter)
+{
+  rgb.palette <- colorRampPalette(c("white", "blue"), space = "rgb")
+  lattice::levelplot(matCost, col.regions = rgb.palette(40), main = "Interaction visualization")
+}
+
+
+#' Taking sample for each level of factors
+#'
+#' Returns a training sample row names for a dataset taking draw in each level of the dataset
+#'
+#' @param data The dataset
+#' @seealso \code{\link[dplyr]{group_by}}
+#' @export
+trainingSample <- function(data, train.fraction = 0.75){
+  dots         <- colnames(data)[sapply(data, is.factor)]
+  data$row.num <- 1:nrow(data)
+  dplyr.out    <- dplyr::sample_frac(dplyr::group_by_(data, .dots = dots), train.fraction, replace = F)
+  train        <- dplyr.out$row.num
+  return(train)
+}
+
+
 #function plot interact
 plotInteract <- function(x, y, data, rev = NULL, cut.x = NULL, cut.trace = NULL,
                          simplify = NULL)
 {
-  if (is.null(rev)) {
-    if(is.factor(data[, x[1]])){
-      rev = T
-    }
-  } else {
+  if (!is.null(rev)) {
     if (rev) {
       x[1:2] <- rev(x[1:2])
     }
   }
-
 
   xfactor     <- data[, x[1]]
   tracefactor <- data[, x[2]]
@@ -22,6 +42,7 @@ plotInteract <- function(x, y, data, rev = NULL, cut.x = NULL, cut.trace = NULL,
   if (!is.null(cut.trace)) {
     tracefactor <- Hmisc::cut2(x = tracefactor, g = cut.trace)
   }
+
   if (!is.null(simplify)) {
     if(!is.factor(data[, x[1]])) {
       xfactor <- Hmisc::cut2(x = xfactor, g = simplify)
@@ -29,11 +50,16 @@ plotInteract <- function(x, y, data, rev = NULL, cut.x = NULL, cut.trace = NULL,
     if(!is.factor(data[, x[2]])) {
       tracefactor <- Hmisc::cut2(x = tracefactor, g = simplify)
     }
+    if (length(levels(xfactor)) > length(levels(tracefactor))) {
+      temp <- xfactor
+      xfactor <- tracefactor
+      tracefactor <- temp
+    }
   }
   interaction.plot(x.factor = xfactor, trace.factor = tracefactor,
                    response = data$y, xlab = x[1], ylab = "y", trace.label = x[2],
-                   col = 1:length(levels(data[, x[2]])), main = paste('Interaction :', paste(x[1:2], collapse = '*'),
-                                                                      '\n H-statistic :', x[3]))
+                   col = 1:length(unique(tracefactor)), main = paste('Interaction :', paste(x[1:2], collapse = '*'),
+                                                                      '\n H-statistic :', round(as.numeric(x[3]), 4)))
 }
 
 #' Root mean squared error

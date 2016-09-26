@@ -6,9 +6,9 @@
 \usage{
 detectInteractions(data, max.interactions, formula.best,
   gbm.control = list(train.fraction = 0.8, family, shrinkage = 0.01,
-  bag.fraction = 0.7, n.trees = 100, n.sample = 50000, depth = 5,
+  bag.fraction = 0.5, n.trees = 100, n.sample = 50000, depth = 5,
   importance.threshold = 0, max.select = 30),
-  glm.control = list(train.fraction = 0.8, family, include = F,
+  glm.control = list(train.fraction = 0.8, family, include = F, speed = F,
   threshold.values = c(0.01, seq(0.05, 1, by = 0.05))))
 }
 \arguments{

@@ -8,6 +8,8 @@
 #   Check Package:             'Cmd + Shift + E'
 #   Test Package:              'Cmd + Shift + T'
 
+# devtools::missing_s3()
+
 
 
 #rajouter l'option offset, si NULL laisser dans les explicatives mais ne pas la #mettre en offset,
@@ -32,7 +34,6 @@
 #' \item{y}{true value of the target}
 #' \item{selected_features}{vector of character of the selected features}
 #' \item{non_selected_features}{vector of character of the non selected features}
-#' @importFrom magrittr "%>%"
 #' @seealso \code{\link[HDtweedie]{cv.HDtweedie}}, \code{\link[glmnet]{cv.glmnet}}
 #' @examples
 #' data = cbind(subset(x = mtcars, select = -mpg),
@@ -42,17 +43,21 @@
 lassoSelection <- function(data = data, type.measure = "mse",
                            family = "gaussian", offset = NULL,
                            lambda = "lambda.min", train.fraction = 1,
-                           seq.lambda = NULL){
+                           seq.lambda = NULL, nfolds = 10){
   data <- na.omit(data)
   Xy <- model.matrix( ~ . - 1 , data = data)
   train <- sample(nrow(data), floor(train.fraction * nrow(data)))
 
   if(family == 'gamma'){
     cv.lasso   <- HDtweedie::cv.HDtweedie
-    cv.control <- list(pred.loss = type.measure, p = 2)
+    plot.lasso <- HDtweedie:::plot.cv.HDtweedie
+    predict.lasso <- HDtweedie:::predict.cv.HDtweedie
+    cv.control <- list(pred.loss = type.measure, p = 2, nfolds = nfolds)
   } else {
     cv.lasso   <- glmnet::cv.glmnet
-    cv.control <- list(type.measure = type.measure, family=family)
+    plot.lasso <- glmnet::plot.cv.glmnet
+    predict.lasso <- glmnet::predict.cv.glmnet
+    cv.control <- list(type.measure = type.measure, family=family, nfolds = nfolds)
   }
 
   if(! is.null(seq.lambda)) {
@@ -122,25 +127,18 @@ lassoSelection <- function(data = data, type.measure = "mse",
   }
 
   formula.best <- paste('y', concatenate.features, sep = '~')
-  pred <- predict(cvfit, newx = subset(Xy, select = -y))
-  true <- Xy[, 'y']
+  if (!is.null(offset)){
+    pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -c(y, get(offset))), offset = Xy[train, offset], s = lambda)
+  } else {
+    pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -y), s = lambda)
+  }
+  true <- Xy[train, 'y']
   output <- list(formula = formula.best, cvfit = cvfit, prediction = pred,
                  y = true, selected_features = best.features,
                  non_selected_features = non.selected.features)
 
   class(output) <- 'LassoGLM'
   return(output)
-}
-
-#' plot the cross-validation curve of Lasso-GLM procedure
-#'
-#' Plotting of the performances of the model according to lambda (LASSO regularization term)
-#' @param self a LassoGLM object e.g the output of lassoSelection procedure
-#'
-#' @export
-plotLambda <- function(x, ...) UseMethod('plotLambda')
-plotLambda.LassoGLM <- function(self) {
-  plot(self$cvfit)
 }
 
 #' Plotting of the best Lasso selected model
@@ -152,7 +150,10 @@ plotLambda.LassoGLM <- function(self) {
 plot.LassoGLM <- function(self) {
   axaml::plotgain(predrisk = self$prediction, truerisk = self$y, return_val = T)$plot
 }
-
+#' Selected features of Lasso GLM procedure
+#'
+#' Give the selected and the non selected features
+#' @export
 summary.LassoGLM <- function(self){
   max.length                         <- max(length(self$non_selected_features),
                                             length(self$selected_features))
@@ -168,6 +169,8 @@ summary.LassoGLM <- function(self){
 
 
 perf <- function(x, ...) UseMethod('perf')
+
+#' @export
 perf.LassoGLM <- function(self)
 {
   rmse <- rmse(pred = self$prediction, true = self$y)
@@ -176,5 +179,19 @@ perf.LassoGLM <- function(self)
                           'Gini index' = as.numeric(gini)),
                caption = 'Performances of Lasso-GLM model')
   #invisible(list('Root_mean_squared_error' = rmse, 'Gini_index' = as.numeric(gini)))
+}
+
+
+#' plot the cross-validation curve of Lasso-GLM procedure
+#'
+#' Plotting of the performances of the model according to lambda (LASSO regularization term)
+#' @param self a LassoGLM object e.g the output of lassoSelection procedure
+#' @export
+plotLambda <- function(x, ...) UseMethod('plotLambda')
+
+#' Plotting lambda for Lasso
+#' @export
+plotLambda.LassoGLM <- function(self) {
+  plot(self$cvfit)
 }
 

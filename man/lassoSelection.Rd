@@ -5,12 +5,10 @@
 \title{Finding the best lasso model}
 \usage{
 lassoSelection(data = data, type.measure = "mse", family = "gaussian",
-  offset = NULL, lambda = "lambda.min", train.fraction = 0.8,
-  seq.lambda = NULL)
+  offset = NULL, lambda = "lambda.min", train.fraction = 1,
+  seq.lambda = NULL, nfolds = 10)
 }
 \arguments{
-\item{data}{the dataset}
-
 \item{type.measure}{the performance criterion use to perform cross-validation. Available values are 'mse', 'mae' (for regression), 'auc' (for classification) and deviance.}
 
 \item{family}{distribution of the target. Available family are 'gaussian', 'gamma', 'binomial', 'multinomial', 'cox', 'mgaussian'.}
@@ -35,6 +33,9 @@ lassoSelection(data = data, type.measure = "mse", family = "gaussian",
 }
 \description{
 Finding the best model using 5-fold cross-validation using Lasso-GLM model.
+}
+\details{
+#' @param data the dataset
 }
 \examples{
 data = cbind(subset(x = mtcars, select = -mpg),

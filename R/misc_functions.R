@@ -24,9 +24,13 @@ trainingSample <- function(data, train.fraction = 0.75){
 
 
 #function plot interact
+#' plot interaction
+#'
+#' @export
 plotInteract <- function(x, y, data, rev = NULL, cut.x = NULL, cut.trace = NULL,
                          simplify = NULL)
 {
+  x <- c(as.character(x[1, 1]), as.character(x[1, 2]), x[1, 3])
   if (!is.null(rev)) {
     if (rev) {
       x[1:2] <- rev(x[1:2])
@@ -54,12 +58,16 @@ plotInteract <- function(x, y, data, rev = NULL, cut.x = NULL, cut.trace = NULL,
       temp <- xfactor
       xfactor <- tracefactor
       tracefactor <- temp
+      temp <- x[1]
+      x[1] <- x[2]
+      x[2] <- temp
     }
   }
   interaction.plot(x.factor = xfactor, trace.factor = tracefactor,
-                   response = data$y, xlab = x[1], ylab = "y", trace.label = x[2],
-                   col = 1:length(unique(tracefactor)), main = paste('Interaction :', paste(x[1:2], collapse = '*'),
-                                                                      '\n H-statistic :', round(as.numeric(x[3]), 4)))
+                   response = y, xlab = x[1], ylab = "y", trace.label = x[2],
+                   col = 1:length(unique(tracefactor)), fixed = T,
+                   main = paste('Interaction :', paste(x[1:2], collapse = '*'),
+                                '\n H-statistic :', round(as.numeric(x[3]), 4)))
 }
 
 #' Root mean squared error
@@ -69,6 +77,7 @@ plotInteract <- function(x, y, data, rev = NULL, cut.x = NULL, cut.trace = NULL,
 #' @details
 #' The root mean squared error is a an accuracy criterion which writes as follow:
 #' \deqn{RMSE = \sqrt{\frac{1}{N}\sum_{i=1}^N ( y_i - \hat{y}_i)^2  } }
+#' @export
 rmse <- function(pred, true)
 {
   return(sqrt(mean((pred-true)**2)))
@@ -82,12 +91,27 @@ rmse <- function(pred, true)
 #' @param per.na the maximum percentage of missing data allowed for a variable
 #' @return A clean and neat dataset
 #' @export
-cleanData <- function(data, n.levels = 20, perc.na = 0.2)
+cleanData <- function(data, n.levels = 20, perc.na = 0.2, na.string = NULL, remove.cor = NULL)
 {
-  novar.col      <- sapply(data, function(x) length(unique(x)) <= 1)
+  data <- data.frame(data)
   high.levels    <- sapply(data, function(x) length(levels(x)) > n.levels) #justifier dans rapport
   na.columns     <- sapply(data, function(x) sum(is.na(x)) > perc.na * nrow(data))
   date.col       <- grepl(pattern = 'date', x = colnames(data))
-  keep.columns   <- !(high.levels | na.columns | novar.col | date.col)
-  return(data[, keep.columns])
+  keep.columns   <- !(high.levels | na.columns | date.col)
+  data.temp      <- data[, keep.columns]
+  if (!is.null(remove.cor)) {
+    X                   <- subset(data.temp, select = -y)
+    tmp                 <- cor(X[, sapply(X, is.numeric)])
+    tmp[upper.tri(tmp)] <- 0
+    diag(tmp)           <- 0
+    X.new               <- data[, ! sapply(tmp, function(x) any(x > remove.cor))]
+    data.temp           <- cbind(X.new, data.temp$y)
+  }
+  if (!is.null(na.string)){
+    data.temp[data.temp == na.string] <- NA
+    data.temp <- na.omit(data.temp)
+  }
+  data.final <- as.data.frame(lapply(data.temp, function(x) if(is.factor(x)) factor(x) else x))
+  novar.col  <- sapply(data.final, function(x) length(unique(x)) <= 1)
+  return(na.omit(data.final[, !novar.col]))
 }

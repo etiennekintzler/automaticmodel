@@ -1,3 +1,56 @@
+#' 
+#' #' @export
+#' computeInteractions <- function(gbm.model, data, importance.threshold = 0,
+#'                                 n.sample = 1e4, max.select = NULL, interact.threshold = 0)
+#' {
+#'   ### Selecting only the most important variables according to a threshold ###
+#'   summary.gbm   <- summary(gbm.model, plotit = F)
+#'   #print(summary.gbm)
+#'   important.var <- summary.gbm[summary.gbm$rel.inf > importance.threshold, "var"]
+#'   if (!is.null(max.select)) {
+#'     important.var <- summary.gbm[1:max.select, "var"]
+#'   }
+#'   #Computing interaction
+#'   index     <- na.omit(pmatch(important.var, colnames(data)))
+#'   n.var     <- length(index)
+#'   mat.inter <- matrix(ncol = n.var, nrow = n.var)
+#'   pb        <- txtProgressBar(0, n.var, style=3)
+#'   best.iter <- gbm::gbm.perf(gbm.model, plot.it = F)
+#'   training.sample <- trainingSample(data, train.fraction = (n.sample/nrow(data)))
+#'   for (i in 1:n.var) {
+#'     for (j in 1:n.var) {
+#'       setTxtProgressBar(pb, i)
+#'       
+#'       #print(paste(i, j))
+#'       if (i < j) {
+#'         mat.inter[i, j] = gbm::interact.gbm(x     = gbm.model, data=data[training.sample, ],
+#'                                             i.var = c(colnames(data)[index[i]],
+#'                                                       colnames(data)[index[j]]),
+#'                                             n.trees = best.iter)
+#'       }
+#'     }
+#'   }
+#'   mat.high <- which(mat.inter > interact.threshold, arr.ind = T)
+#'   
+#'   if (nrow(mat.high) == 0) {
+#'     print("There is no interactions at this threshold")
+#'     return(NULL)
+#'   } else {
+#'     #colnames(gbm.model$data$x.order)[which(mat.inter>0.3, arr.ind=T)]
+#'     mat.name  <- matrix(NA, nrow = nrow(mat.high), ncol = 3)
+#'     for (row in 1:nrow(mat.high)) {
+#'       mat.name[row, 1:2] <- colnames(gbm.model$data$x.order)[mat.high[row, ]]
+#'       mat.name[row, 3]   <- mat.inter[ mat.high[row, ][1], mat.high[row, ][2] ]
+#'     }
+#'     
+#'   }
+#'   mat.name <- data.frame(mat.name)
+#'   mat.name[, 3] <- as.numeric(as.character(mat.name[, 3]))
+#'   mat.name <- mat.name[order(mat.name[, 3], decreasing = T), ]
+#'   colnames(mat.name) <- c('Variable 1', 'Variable 2', 'H-statistic')
+#'   return(mat.name)
+#' }
+
 
 #
 # automaticDetection <- function(data, family, max.interactions = 50,

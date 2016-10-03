@@ -17,3 +17,4 @@ Imports: HDtweedie,
     Hmisc,
     axaml,
     speedglm
+Suggests: testthat

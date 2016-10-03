@@ -4,7 +4,7 @@
 \alias{detectInteractions}
 \title{Detect interactions}
 \usage{
-detectInteractions(data, max.interactions, formula.best,
+detectInteractions(data, max.interactions, formula.best, shuffle = F,
   gbm.control = list(train.fraction = 0.8, family, shrinkage = 0.01,
   bag.fraction = 0.5, n.trees = 100, n.sample = 50000, depth = 5,
   importance.threshold = 0, max.select = 30),

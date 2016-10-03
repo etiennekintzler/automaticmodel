@@ -4,9 +4,9 @@
 \alias{plot.InteractionsDetection}
 \title{Interaction plot of interactions found}
 \usage{
-\method{plot}{InteractionsDetection}(self, i = 1, y,
-  data = eval(self$function.call$data), rev = NULL, cut.x = NULL,
-  cut.trace = NULL, simplify = NULL)
+\method{plot}{InteractionsDetection}(self, i = 1, rev = NULL,
+  data = eval(self$function.call$data), cut.x = NULL, cut.trace = NULL,
+  simplify = NULL, criterion = "Gini")
 }
 \arguments{
 \item{self}{an \code{InteractionsDetection}.}

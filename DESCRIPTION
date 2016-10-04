@@ -16,5 +16,6 @@ Imports: HDtweedie,
     knitr,
     Hmisc,
     axaml,
-    speedglm
+    speedglm,
+    magrittr
 Suggests: testthat

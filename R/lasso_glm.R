@@ -171,13 +171,14 @@ summary.LassoGLM <- function(self){
 perf <- function(x, ...) UseMethod('perf')
 
 #' @export
-perf.LassoGLM <- function(self)
+perf.LassoGLM <- function(self, format = 'pandoc')
 {
   rmse <- rmse(pred = self$prediction, true = self$y)
   gini <- axaml::kpi_gini(predrisk = self$prediction, truerisk = self$y )
   knitr::kable(data.frame('Root Mean Squared error' = rmse,
                           'Gini index' = as.numeric(gini)),
-               caption = 'Performances of Lasso-GLM model')
+               caption = 'Performances of Lasso-GLM model',
+               format = format)
   #invisible(list('Root_mean_squared_error' = rmse, 'Gini_index' = as.numeric(gini)))
 }
 

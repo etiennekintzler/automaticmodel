@@ -99,17 +99,17 @@ cleanData <- function(data, n.levels = 20, perc.na = 0.2, na.string = NULL, remo
   date.col       <- grepl(pattern = 'date', x = colnames(data))
   keep.columns   <- !(high.levels | na.columns | date.col)
   data.temp      <- data[, keep.columns]
+  if (!is.null(na.string)){
+    data.temp[data.temp == na.string] <- NA
+    data.temp <- na.omit(data.temp)
+  }
   if (!is.null(remove.cor)) {
     X                   <- subset(data.temp, select = -y)
     tmp                 <- cor(X[, sapply(X, is.numeric)])
     tmp[upper.tri(tmp)] <- 0
     diag(tmp)           <- 0
-    X.new               <- data[, ! sapply(tmp, function(x) any(x > remove.cor))]
-    data.temp           <- cbind(X.new, data.temp$y)
-  }
-  if (!is.null(na.string)){
-    data.temp[data.temp == na.string] <- NA
-    data.temp <- na.omit(data.temp)
+    X.new               <- X[, ! apply(tmp, 2,function(x) any(x > remove.cor))]
+    data.temp           <- cbind(X.new, y = data.temp$y)
   }
   data.final <- as.data.frame(lapply(data.temp, function(x) if(is.factor(x)) factor(x) else x))
   novar.col  <- sapply(data.final, function(x) length(unique(x)) <= 1)

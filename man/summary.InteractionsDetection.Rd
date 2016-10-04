@@ -4,7 +4,8 @@
 \alias{summary.InteractionsDetection}
 \title{Return interactions of the best model}
 \usage{
-\method{summary}{InteractionsDetection}(self, criterion = "Gini")
+\method{summary}{InteractionsDetection}(self, criterion = "Gini",
+  format = "pandoc")
 }
 \arguments{
 \item{criterion}{Criterion used to select the best model. Values can be 'Gini' for gini index or 'RMSE' for Root Mean Squared Error}

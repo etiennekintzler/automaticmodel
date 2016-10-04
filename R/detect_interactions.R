@@ -1,7 +1,4 @@
-
 # si n.sample est NULL, sinon faire du sampling
-#Entrer dans computeInteractions pour voir ce qu'il se passe niveau  du pmatch
-
 #' @export
 computeInteractions2 <- function(gbm.model, data, importance.threshold = 0,
                                 n.sample = 1e4, max.select = NULL, interact.threshold = 0)
@@ -23,43 +20,31 @@ computeInteractions2 <- function(gbm.model, data, importance.threshold = 0,
                                                             data    = data[training.sample, ],
                                                             i.var   = i,
                                                             n.trees = best.iter))
-  df.temp <- data.frame(product.names, H)
+  df.temp  <- data.frame(product.names, H)
   mat.name <- df.temp[df.temp[, 3] > interact.threshold, ]
   if (nrow(mat.name) == 0) {
     print("There is no interactions at this threshold")
     return(NULL)
   } else {
-  mat.name <- mat.name[order(mat.name[, 3], decreasing = T), ]
+  mat.name           <- mat.name[order(mat.name[, 3], decreasing = T), ]
   colnames(mat.name) <- c('Variable 1', 'Variable 2', 'H-statistic')
+  row.names(mat.name) <- NULL
   return(mat.name)
   }
 }
 
 
-getInteractions <- function(mat.inter, interact.threshold = 0, gbm.model)
+getInteractions <- function(mat.name, interact.threshold = 0, gbm.model)
 {
   ### Selection of the highest interactions according to a threshold ###
-  mat.high <- which(mat.inter > interact.threshold, arr.ind = T)
-
+  mat.name      <- mat.name[mat.name[, 3] > interact.threshold, ]
   if (nrow(mat.high) == 0) {
     print("There is no interactions at this threshold")
   } else {
-    #colnames(gbm.model$data$x.order)[which(mat.inter>0.3, arr.ind=T)]
-    mat.name  <- matrix(NA, nrow = nrow(mat.high), ncol = 3)
-    for (row in 1:nrow(mat.high)) {
-      mat.name[row, 1:2] <- colnames(gbm.model$data$x.order)[mat.high[row, ]]
-      mat.name[row, 3]   <- mat.inter[ mat.high[row, ][1], mat.high[row, ][2] ]
-    }
+    mat.name
   }
-  mat.name <- data.frame(mat.name)
-  mat.name[, 3] <- as.numeric(as.character(mat.name[, 3]))
-  mat.name <- mat.name[order(mat.name[, 3], decreasing = T), ]
-  colnames(mat.name) <- c('Variable 1', 'Variable 2', 'H-statistic')
-
   return(mat.name)
 }
-
-
 
 
 glmPerformance <- function(data, gbm.model = gbm.model, formula.best, family,
@@ -86,7 +71,6 @@ glmPerformance <- function(data, gbm.model = gbm.model, formula.best, family,
 
     ### Training the GLMs ###
 
-    #train <- sample(nrow(data), floor(train.fraction * nrow(data)))
     #TRAIN index with all factros
     data  <- na.omit(data)
     #train <- trainingSample(data, train.fraction = train.fraction)
@@ -120,10 +104,10 @@ glmPerformance <- function(data, gbm.model = gbm.model, formula.best, family,
     res.gini <- c('Gini Base' = gini[1], 'Gini Plus' = gini[2],
                   'Diff plus - base' = as.numeric(gini[2] - gini[1]) )
 
-    lr.results    <- lmtest::lrtest(glm.model, glm.model.plus)
-    anova.results <- NULL #anova(glm.model.plus, test = 'Chisq')
+    lr.results        <- lmtest::lrtest(glm.model, glm.model.plus)
+    anova.results     <- NULL #anova(glm.model.plus, test = 'Chisq')
     print(options);print(res.rmse);print(res.gini)
-    pred <- list('base' = pred.base, 'plus' = pred.plus)
+    pred              <- list('base' = pred.base, 'plus' = pred.plus)
     plot_gain.control <- list(predrisk = pred, truerisk = true)
     return(list(RMSE = res.rmse, Gini = res.gini, options = options, likelihood.ratio.test = lr.results,
                 anova.results = anova.results, formula.plus = formula.plus.interact, glm.model.plus = glm.model.plus,
@@ -140,58 +124,19 @@ glmPerformance <- function(data, gbm.model = gbm.model, formula.best, family,
 
 
 
-getGlmPerformance <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05)),
-                              data, mat.name, gbm.model, formula.best, family,
-                              train.fraction = .8, max.interactions = 50, include = F, speed = F)
-{
-  min.interaction.value  <- min(mat.name[, 3], na.rm = T)
-  max.interaction.value  <- max(mat.name[, 3], na.rm = T)
-  first.threshold        <- which(min.interaction.value <= threshold.values)[1] # mettre des if min et max
-  last.threshold         <- which(max.interaction.value <= threshold.values)[1] # mettre if min and max
-  stored.results         <- list()
-  length(stored.results) <- 20
 
-  #Loop through all the values of the threshold
-
-  for (i in first.threshold:last.threshold) {
-    print(paste('H-statistic threshold value = ', threshold.values[i]))
-
-    if (sum(mat.name[, 3] > threshold.values[i], na.rm = T) < max.interactions) {
-      if (i > 1) {
-      if ( sum(mat.name[, 3] > threshold.values[i-1], na.rm = T) > sum(mat.name[, 3] > threshold.values[i], na.rm = T) ) {
-        set.seed(1991)
-        stored.results[[i]] <- glmPerformance(interact.threshold = threshold.values[i],
-                                              train.fraction = train.fraction,
-                                              gbm.model = gbm.model, formula.best = formula.best,
-                                              mat.name = mat.name, data = data,
-                                              family = family, include = include, speed = speed)
-      } else {
-        print('Same interactions as previous iteration, going to next iteration')
-      }
-    }
-      } else {
-      print(paste("Number of interactions = ", sum(mat.name[, 3] > threshold.values[i], na.rm = T), '>',
-                  max.interactions, "= maximum number of interaction"))
-    }
-    cat('\n')
-  }
-
-  return(stored.results)
-}
 
 getGlmPerformance2 <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05)),
                               data, mat.name, gbm.model, formula.best, family,
                               train.fraction = .8, max.interactions = 50, include = F, speed = F)
 {
-  stored.results         <- list()
-  length(stored.results) <- 20
-  l  <- sapply(1:length(threshold.values), function(i, x = threshold.values) {tmp <-sum(mat.name[, 3] > x[i]) > 0; tmp & (tmp < max.interactions)} )
+  l  <- sapply(1:length(threshold.values), function(i, x = threshold.values) {tmp <-sum(mat.name[, 3] > x[i]); (tmp > 0) & (tmp < max.interactions)})
   ll <- c(T, sapply(2:length(threshold.values), function(i, x = threshold.values) sum(mat.name[, 3] > x[i]) < sum(mat.name[, 3] > x[i-1])))
-  stored.results <- lapply(which(l*ll>0), function(i) glmPerformance(interact.threshold = threshold.values[i],
-                                          train.fraction = train.fraction,
-                                          gbm.model = gbm.model, formula.best = formula.best,
-                                          mat.name = mat.name, data = data,
-                                          family = family, include = include, speed = speed))
+  stored.results <- lapply(which(l * ll > 0), function(i) {set.seed(1991); glmPerformance(interact.threshold = threshold.values[i],
+                                                                                          train.fraction = train.fraction,
+                                                                                          gbm.model = gbm.model, formula.best = formula.best,
+                                                                                          mat.name = mat.name, data = data,
+                                                                                          family = family, include = include, speed = speed)})
   return(stored.results)
 }
 
@@ -239,13 +184,13 @@ detectInteractions <- function(data, max.interactions, formula.best, shuffle = F
     mat.name[, 3] <- mat.name[sample(nrow(mat.name)), 3]
   }
   print('Fitting GLMs model')
-  results <- getGlmPerformance2(threshold.values = glm.control$threshold.values , data = data, mat.name = mat.name,
+  GLMs.perf <- getGlmPerformance2(threshold.values = glm.control$threshold.values , data = data, mat.name = mat.name,
                                gbm.model = gbm.model, formula.best = formula.best, family = glm.control$family,
                                train.fraction = glm.control$train.fraction, max.interactions = max.interactions,
                                include = glm.control$include, speed = glm.control$speed) #0-1 la famille doit être binomial
 
   function.call <- as.list(sys.call())
-  output        <- list(GLMs.perf = results, best.interactions = mat.name,
+  output        <- list(GLMs.perf = GLMs.perf, best.interactions = mat.name,
                         function.call = function.call)
   class(output) <- 'InteractionsDetection'
   invisible(output)
@@ -280,7 +225,7 @@ LR.InteractionsDetection <- function(self)
 #' @param criterion Criterion used to select the best model. Values can be 'Gini' for gini index or 'RMSE' for Root Mean Squared Error
 #' @return Printing a table with the best interactions and their correspond H-statistic
 #' @export
-summary.InteractionsDetection <- function(self, criterion = 'Gini')
+summary.InteractionsDetection <- function(self, criterion = 'Gini', format = 'pandoc')
 {
   #This method return the best model according to GINI
   index <- rep(NA, length(self$GLMs.perf))
@@ -295,7 +240,7 @@ summary.InteractionsDetection <- function(self, criterion = 'Gini')
   colnames(interaction.matrix) <- c('Variable 1', 'Variable 2', 'H-statistic')
   knitr::kable(interaction.matrix, caption = paste0('Best model includes ', best.model$options[1],
                                                     ' interactions, H-statistic treshold : ', best.model$options[2],
-                                                    sep = ''), format = 'pandoc')
+                                                    sep = ''), format = format)
 }
 
 #' Performances of the best selected model
@@ -306,21 +251,16 @@ summary.InteractionsDetection <- function(self, criterion = 'Gini')
 #' @export
 perf <- function(x, ...) UseMethod('perf')
 #' @export
-perf.InteractionsDetection <- function(self, criterion = 'Gini')
+perf.InteractionsDetection <- function(self, criterion = 'Gini', format = 'pandoc')
 {
-  index <- rep(NA, length(self$GLMs.perf))
-  for (i in 1:length(index)) {
-    if (!is.null(self$GLMs.perf[[i]][[criterion]][3])) {
-      index[i] <- self$GLMs.perf[[i]][[criterion]][3]
-    }
-  }
+  index <- sapply(seq_along(self$GLMs.perf), function(i, x = self$GLMs.perf) x[[i]][[criterion]][3])
   index.best <- which.max(index)
   best.model <- self$GLMs.perf[[index.best]]
-  dataframe  <- data.frame('Root Mean Squared error' = best.model$RMSE, 'Gini index' = best.model$Gini)
+  dataframe  <- data.frame('Root\ Mean Squared error' = best.model$RMSE, 'Gini index' = best.model$Gini)
   rownames(dataframe) <- c('Base Model', 'Augmented Model', 'Difference augmented - base ')
   cat1 <- paste0("Performances of the best augmented model vs base model according to '", criterion, "' criterion,", sep = '')
   knitr::kable(dataframe, caption = paste(cat1,paste0('Train fraction:', best.model$options[3]), sep = '\n'),
-               format = 'pandoc')
+               format = format)
   #invisible(list('Root_mean_squared_error' = best.model$RMSE, 'Gini_index' = as.numeric(best.model$Gini)))
 }
 
@@ -343,25 +283,20 @@ plot.InteractionsDetection <- function(self, i = 1, rev = NULL,data = eval(self$
                                        simplify = NULL, criterion = 'Gini')
 {
   # This method plot the i-th interactions, by default it plot the best interaction
-  index <- rep(NA, length(self$GLMs.perf))
-  for (n in 1:length(index)) {
-    if (!is.null(self$GLMs.perf[[n]][[criterion]][3])) {
-      index[n] <- self$GLMs.perf[[n]][[criterion]][3]
-    }
-  }
+  index <- sapply(seq_along(self$GLMs.perf), function(i, x = self$GLMs.perf) x[[i]][[criterion]][3])
   index.best <- which.max(index)
   best.model <- self$GLMs.perf[[index.best]]
-  plotInteract(self$best.interactions[i, 1:3], y = predict(best.model$glm.model.plus, eval(self$function.call$data), type = 'response'),
-               data = data, rev=rev, cut.x=cut.x, cut.trace=cut.trace,
-               simplify = simplify)
+  plotInteract(x = self$best.interactions[i, 1:3],
+               y = predict(best.model$glm.model.plus, eval(self$function.call$data), type = 'response'),
+               data = data, rev=rev, cut.x=cut.x, cut.trace=cut.trace, simplify = simplify)
 }
 
 # Ne pas oublier les TROIS PETIT POINTS si on utilise plus d'un paramètre
 #' @export
 bestInteractions <- function(x, ...) UseMethod('bestInteractions')
 #' @export
-bestInteractions.InteractionsDetection <- function(self, i = 5) {
-  return(knitr::kable(self$best.interactions[1:i, ], format = 'pandoc', caption = 'Best interactions'))
+bestInteractions.InteractionsDetection <- function(self, i = 5, format = 'pandoc') {
+  return(knitr::kable(self$best.interactions[1:i, ], format = format, caption = 'Best interactions'))
 }
 
 #' Plot Gini index of the augmented model vs base model
@@ -376,12 +311,7 @@ plotBest <- function(x, ...) UseMethod('plotBest')
 
 #' @export
 plotBest.InteractionsDetection <- function(self, criterion = 'Gini') {
-  index <- rep(NA, length(self$GLMs.perf))
-  for (i in 1:length(index)) {
-    if (!is.null(self$GLMs.perf[[i]][[criterion]][3])) {
-      index[i] <- self$GLMs.perf[[i]][[criterion]][3]
-    }
-  }
+  index <- sapply(seq_along(self$GLMs.perf), function(i, x = self$GLMs.perf) x[[i]][[criterion]][3])
   index.best <- which.max(index)
   do.call(what = axaml::plotgain, args = c(self$GLMs.perf[[index.best]]$plot_gain.control, return_val = T))$plot
 }
@@ -392,20 +322,14 @@ plotBest.InteractionsDetection <- function(self, criterion = 'Gini') {
 #'
 #' @seealso \code{\link{plot.InteractionsDetection}}
 #' @export
-interactionsBestModelPlot <- function(x, ...) UseMethod('interactionsBestModelPlot')
+plotAll <- function(x, ...) UseMethod('plotAll')
 
 #' @export
-interactionsBestModelPlot.InteractionsDetection <- function(self, simplify = 8, criterion = 'Gini') {
-  index <- which(sapply(self$GLMs.perf, function(x)! is.null(x)))
-  crit <- rep(NA, length(index))
-  for (i in 1:length(index)) {
-      crit[i] <- self$GLMs.perf[[index[i]]][[criterion]][3]
-    }
-  index.best <- which.max(crit)
-  best.model <- self$GLMs.perf[[index[index.best]]]
+plotAll.InteractionsDetection <- function(self, simplify = 8, criterion = 'Gini') {
+  index <- sapply(seq_along(self$GLMs.perf), function(i, x = self$GLMs.perf) x[[i]][[criterion]][3])
+  index.best <- which.max(index)
+  best.model <- self$GLMs.perf[[index.best]]
   for(i in 1:best.model$options[1]){
     plot(self, i = i, simplify = simplify)
   }
 }
-
-

@@ -1,4 +1,44 @@
-#' 
+# getGlmPerformance <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05)),
+#                               data, mat.name, gbm.model, formula.best, family,
+#                               train.fraction = .8, max.interactions = 50, include = F, speed = F)
+# {
+#   min.interaction.value  <- min(mat.name[, 3], na.rm = T)
+#   max.interaction.value  <- max(mat.name[, 3], na.rm = T)
+#   first.threshold        <- which(min.interaction.value <= threshold.values)[1] # mettre des if min et max
+#   last.threshold         <- which(max.interaction.value <= threshold.values)[1] # mettre if min and max
+#   stored.results         <- list()
+#   length(stored.results) <- 20
+#
+#   #Loop through all the values of the threshold
+#
+#   for (i in first.threshold:last.threshold) {
+#     print(paste('H-statistic threshold value = ', threshold.values[i]))
+#
+#     if (sum(mat.name[, 3] > threshold.values[i], na.rm = T) < max.interactions) {
+#       if (i > 1) {
+#         if ( sum(mat.name[, 3] > threshold.values[i-1], na.rm = T) > sum(mat.name[, 3] > threshold.values[i], na.rm = T) ) {
+#           set.seed(1991)
+#           stored.results[[i]] <- glmPerformance(interact.threshold = threshold.values[i],
+#                                                 train.fraction = train.fraction,
+#                                                 gbm.model = gbm.model, formula.best = formula.best,
+#                                                 mat.name = mat.name, data = data,
+#                                                 family = family, include = include, speed = speed)
+#         } else {
+#           print('Same interactions as previous iteration, going to next iteration')
+#         }
+#       }
+#     } else {
+#       print(paste("Number of interactions = ", sum(mat.name[, 3] > threshold.values[i], na.rm = T), '>',
+#                   max.interactions, "= maximum number of interaction"))
+#     }
+#     cat('\n')
+#   }
+#
+#   return(stored.results)
+# }
+
+
+#'
 #' #' @export
 #' computeInteractions <- function(gbm.model, data, importance.threshold = 0,
 #'                                 n.sample = 1e4, max.select = NULL, interact.threshold = 0)
@@ -20,7 +60,7 @@
 #'   for (i in 1:n.var) {
 #'     for (j in 1:n.var) {
 #'       setTxtProgressBar(pb, i)
-#'       
+#'
 #'       #print(paste(i, j))
 #'       if (i < j) {
 #'         mat.inter[i, j] = gbm::interact.gbm(x     = gbm.model, data=data[training.sample, ],
@@ -31,7 +71,7 @@
 #'     }
 #'   }
 #'   mat.high <- which(mat.inter > interact.threshold, arr.ind = T)
-#'   
+#'
 #'   if (nrow(mat.high) == 0) {
 #'     print("There is no interactions at this threshold")
 #'     return(NULL)
@@ -42,7 +82,7 @@
 #'       mat.name[row, 1:2] <- colnames(gbm.model$data$x.order)[mat.high[row, ]]
 #'       mat.name[row, 3]   <- mat.inter[ mat.high[row, ][1], mat.high[row, ][2] ]
 #'     }
-#'     
+#'
 #'   }
 #'   mat.name <- data.frame(mat.name)
 #'   mat.name[, 3] <- as.numeric(as.character(mat.name[, 3]))

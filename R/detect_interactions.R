@@ -99,7 +99,8 @@ glmPerformance <- function(data, gbm.model = gbm.model, formula.best, family,
     options <- c("Number of interactions" = dim(mat.name)[1], "H-statistic threshold" = interact.threshold,
                  "Train fraction" = train.fraction)
     gini <- axaml::kpi_gini(predrisk = list(gini.base = pred.base, gini.plus = pred.plus),
-                            truerisk = true)
+                            truerisk = true,
+                            significance = 4)
     res.gini <- c('Gini Base' = gini[1], 'Gini Plus' = gini[2],
                   'Diff plus - base' = as.numeric(gini[2] - gini[1]) )
 
@@ -122,13 +123,21 @@ getGlmPerformance2 <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05
                               data, mat.name, gbm.model, formula.best, family,
                               train.fraction = .8, max.interactions = 50, include = F, speed = F)
 {
-  l  <- sapply(1:length(threshold.values), function(i, x = threshold.values) {tmp <-sum(mat.name[, 3] > x[i]); (tmp > 0) & (tmp < max.interactions)})
-  ll <- c(T, sapply(2:length(threshold.values), function(i, x = threshold.values) sum(mat.name[, 3] > x[i]) < sum(mat.name[, 3] > x[i-1])))
-  stored.results <- lapply(which(l * ll > 0), function(i) {set.seed(1991); glmPerformance(interact.threshold = threshold.values[i],
-                                                                                          train.fraction = train.fraction,
-                                                                                          gbm.model = gbm.model, formula.best = formula.best,
-                                                                                          mat.name = mat.name, data = data,
-                                                                                          family = family, include = include, speed = speed)})
+  l  <- sapply(1:length(threshold.values),
+               function(i, x = threshold.values) {
+                 tmp <-sum(mat.name[, 3] > x[i])
+                 return((tmp > 0) & (tmp < max.interactions))
+                 })
+  ll <- c(T, sapply(2:length(threshold.values),
+                    function(i, x = threshold.values) sum(mat.name[, 3] > x[i]) < sum(mat.name[, 3] > x[i-1])))
+  stored.results <- lapply(which(l * ll > 0),
+                           function(i){
+                             set.seed(1991)
+                             glmPerformance(interact.threshold = threshold.values[i], train.fraction = train.fraction,
+                                            gbm.model = gbm.model, formula.best = formula.best,
+                                            mat.name = mat.name, data = data, family = family,
+                                            include = include, speed = speed)
+                             })
   return(stored.results)
 }
 
@@ -152,8 +161,9 @@ getGlmPerformance2 <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05
 #'
 #' @export
 detectInteractions <- function(data, max.interactions, formula.best, shuffle = F,
-                               gbm.control = list(train.fraction = .8, family, shrinkage = .01, bag.fraction = .5,
-                                                  n.trees = 100, n.sample = 5e4, depth = 5, importance.threshold = 0, max.select = 30),
+                               gbm.control = list(train.fraction = .8, family, shrinkage = .01,
+                                                  bag.fraction = .5, n.trees = 100, n.sample = 5e4, depth = 5,
+                                                  importance.threshold = 0, max.select = 30),
                                glm.control = list(train.fraction = .8, family, include = F, speed = F,
                                                   threshold.values = c(0.01, seq(0.05, 1, by = 0.05))))
 {
@@ -162,8 +172,10 @@ detectInteractions <- function(data, max.interactions, formula.best, shuffle = F
   }
   print("Fitting GBM Model")
   #Fitting GBM model
-  gbm.model <- gbm::gbm(y ~ . , distribution = gbm.control$family, data = data, n.trees = gbm.control$n.trees, interaction.depth = gbm.control$depth,
-                        shrinkage = gbm.control$shrinkage, bag.fraction = gbm.control$bag.fraction, verbose = T, train.fraction = gbm.control$train.fraction)
+  gbm.model <- gbm::gbm(y ~ . , distribution = gbm.control$family, data = data, n.trees = gbm.control$n.trees,
+                        interaction.depth = gbm.control$depth, shrinkage = gbm.control$shrinkage,
+                        bag.fraction = gbm.control$bag.fraction, verbose = T,
+                        train.fraction = gbm.control$train.fraction)
 
   print("Computing interaction matrix")
   #computing friedman H matrix
@@ -176,10 +188,11 @@ detectInteractions <- function(data, max.interactions, formula.best, shuffle = F
     mat.name[, 3] <- mat.name[sample(nrow(mat.name)), 3]
   }
   print('Fitting GLMs model')
-  GLMs.perf <- getGlmPerformance2(threshold.values = glm.control$threshold.values , data = data, mat.name = mat.name,
-                               gbm.model = gbm.model, formula.best = formula.best, family = glm.control$family,
-                               train.fraction = glm.control$train.fraction, max.interactions = max.interactions,
-                               include = glm.control$include, speed = glm.control$speed) #0-1 la famille doit être binomial
+  GLMs.perf <- getGlmPerformance2(threshold.values = glm.control$threshold.values , data = data,
+                                  mat.name = mat.name, gbm.model = gbm.model, formula.best = formula.best,
+                                  family = glm.control$family, train.fraction = glm.control$train.fraction,
+                                  max.interactions = max.interactions, include = glm.control$include,
+                                  speed = glm.control$speed)
 
   function.call <- as.list(sys.call())
   output        <- list(GLMs.perf = GLMs.perf, best.interactions = mat.name,
@@ -250,7 +263,8 @@ perf.InteractionsDetection <- function(self, criterion = 'Gini', format = 'pando
   best.model <- self$GLMs.perf[[index.best]]
   dataframe  <- data.frame('Root\ Mean Squared error' = best.model$RMSE, 'Gini index' = best.model$Gini)
   rownames(dataframe) <- c('Base Model', 'Augmented Model', 'Difference augmented - base ')
-  cat1 <- paste0("Performances of the best augmented model vs base model according to '", criterion, "' criterion,", sep = '')
+  cat1 <- paste0("Performances of the best augmented model vs base model according to '",
+                 criterion, "' criterion,", sep = '')
   knitr::kable(dataframe, caption = paste(cat1,paste0('Train fraction:', best.model$options[3]), sep = '\n'),
                format = format)
   #invisible(list('Root_mean_squared_error' = best.model$RMSE, 'Gini_index' = as.numeric(best.model$Gini)))

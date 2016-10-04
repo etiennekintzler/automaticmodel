@@ -128,7 +128,8 @@ lassoSelection <- function(data = data, type.measure = "mse",
 
   formula.best <- paste('y', concatenate.features, sep = '~')
   if (!is.null(offset)){
-    pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -c(y, get(offset))), offset = Xy[train, offset], s = lambda)
+    pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -c(y, get(offset))),
+                          offset = Xy[train, offset], s = lambda)
   } else {
     pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -y), s = lambda)
   }

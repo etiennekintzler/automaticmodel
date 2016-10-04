@@ -33,7 +33,6 @@ computeInteractions2 <- function(gbm.model, data, importance.threshold = 0,
   }
 }
 
-
 getInteractions <- function(mat.name, interact.threshold = 0, gbm.model)
 {
   ### Selection of the highest interactions according to a threshold ###
@@ -118,13 +117,6 @@ glmPerformance <- function(data, gbm.model = gbm.model, formula.best, family,
 # Mettre indicateur GINI dans les if else. si package pour plotter/calculer gini facilement, le prendre. Difference simple en terme de GINI
 #faire juse GINI et RMSE à chaque fois. SI count.
 # Voir pour le calcul de la deviance hors-ech.
-
-
-
-
-
-
-
 
 getGlmPerformance2 <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05)),
                               data, mat.name, gbm.model, formula.best, family,

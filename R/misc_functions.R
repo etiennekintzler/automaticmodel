@@ -101,8 +101,8 @@ cleanData <- function(data, n.levels = 20, perc.na = 0.2, na.string = NULL, remo
   data.temp      <- data[, keep.columns]
   if (!is.null(na.string)){
     data.temp[data.temp == na.string] <- NA
-    data.temp <- na.omit(data.temp)
   }
+  data.temp <- na.omit(data.temp)
   if (!is.null(remove.cor)) {
     X                   <- subset(data.temp, select = -y)
     tmp                 <- cor(X[, sapply(X, is.numeric)])
@@ -113,5 +113,6 @@ cleanData <- function(data, n.levels = 20, perc.na = 0.2, na.string = NULL, remo
   }
   data.final <- as.data.frame(lapply(data.temp, function(x) if(is.factor(x)) factor(x) else x))
   novar.col  <- sapply(data.final, function(x) length(unique(x)) <= 1)
-  return(na.omit(data.final[, !novar.col]))
+  return(na.omit(data.final[, ! novar.col]))
 }
+

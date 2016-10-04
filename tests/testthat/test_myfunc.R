@@ -22,14 +22,17 @@ test_that("", {
 
   set.seed(124)
 
- microbenchmark::microbenchmark(interactions <- detectInteractions(data = df[1:n, ], max.interactions = 20,
-                                               formula.best = best$formula, shuffle = F,
-                                               gbm.control = list(train.fraction = 0.75, family = 'poisson', shrinkage = 0.01,
-                                                                  bag.fraction = .5, n.trees = 200, n.sample = n/10, depth = 5,
-                                                                  importance.threshold = 1, max.select = 100),
-                                               glm.control = list(train.fraction = 0.25, family = poisson(link = 'log'), include = F,
-                                                                  threshold.values = seq(0, 1, length.out = 50))),
-                                times = 1L)
+interactions <- detectInteractions(data = df[1:n, ], max.interactions = 20,
+                                   formula.best = best$formula, shuffle = F,
+                                   gbm.control = list(train.fraction = 0.75, family = 'poisson', shrinkage = 0.01,
+                                                      bag.fraction = .5, n.trees = 200, n.sample = n/10, depth = 5,
+                                                      importance.threshold = 1, max.select = 100),
+                                   glm.control = list(train.fraction = 0.25, family = poisson(link = 'log'), include = F,
+                                                      threshold.values = seq(0, 1, length.out = 50)))
+
+ debugonce(perf)
+ perf(interactions)
+
  set.seed(124)
 
  microbenchmark::microbenchmark(interactions <- detectInteractions(data = df[1:n, ], max.interactions = 20,

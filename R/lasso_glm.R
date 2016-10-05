@@ -169,8 +169,10 @@ summary.LassoGLM <- function(self){
 
 
 
-perf <- function(x, ...) UseMethod('perf')
-
+#' Give a summary of the performances of the Lasso-GLM procedure.
+#'
+#' @param format the format of the knitr table returns
+#' @return a table with the RMSE and the Gini index of the selected model.
 #' @export
 perf.LassoGLM <- function(self, format = 'pandoc')
 {

@@ -2,7 +2,7 @@
 % Please edit documentation in R/detect_interactions.R
 \name{detectInteractions}
 \alias{detectInteractions}
-\title{Detect interactions}
+\title{Detect interactions using GBM modeling}
 \usage{
 detectInteractions(data, max.interactions, formula.best, shuffle = F,
   gbm.control = list(train.fraction = 0.75, family, shrinkage = 0.01,
@@ -37,6 +37,11 @@ detectInteractions(data, max.interactions, formula.best, shuffle = F,
 \item threshold.values The threshold values for the H-statistics
 }}
 }
+\value{
+A list of three object. The first object is a list corresponds to the performances of the regression objects of all
+ the GLMs. The second is the dataframe with the interacted variables names and the corresponding H-statistic. The last object
+ corresponds to the \code{function.call}.
+}
 \description{
 Using Gradient Boosting Model and Friedman H-statistic to find interactions in the model.
 Comparison of the performances between the base model and the interactions-augmented model using root mean squared error and gini index.
@@ -47,9 +52,9 @@ Friedman, J. and Popescu B. (2005) \emph{Predictive Learning via Rule Ensembles}
 Firedman, J. (2009) \emph{Greedy Function Approximation : A Gradient Boosting Machine} \url{https://statweb.stanford.edu/~jhf/ftp/trebst.pdf}
 }
 \seealso{
-\code{\link[gbm]{glm}} for GLM modeling
+\code{\link[gbm]{glm}} for Generalized Linear Models modeling
 
-\code{\link[gbm]{gbm}} for GBM modeling
+\code{\link[gbm]{gbm}} for Gradient Boosting Machine modeling
 
 \code{\link[gbm]{interact.gbm}} to compute H-statitic,
 }

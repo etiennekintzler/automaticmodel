@@ -6,13 +6,13 @@
 \usage{
 perf(x, ...)
 }
-\arguments{
-\item{criterion}{Criterion used to select the best model. Values can be 'Gini' or 'RMSE'}
-}
-\value{
-Table with the performances of the best model
-}
 \description{
 Returning the performances (RMSE and Gini) of the best model selected according to criterion
+}
+\seealso{
+\code{\link[axamodel]{perf.InteractionsDetection}} for the comparison of the performances of the GLM base model and GLM
+augmented model.
+
+\code{\link[axamodel]{perf.LassoGLM}} for the performances of the GLM-LASSO selected model
 }
 

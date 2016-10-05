@@ -19,13 +19,14 @@
 #'
 #' Finding the best model using 5-fold cross-validation using Lasso-GLM model.
 #'
-#'#' @param data the dataset
+#' @param data the dataset
 #' @param type.measure the performance criterion use to perform cross-validation. Available values are 'mse', 'mae' (for regression), 'auc' (for classification) and deviance.
 #' @param family distribution of the target. Available family are 'gaussian', 'gamma', 'binomial', 'multinomial', 'cox', 'mgaussian'.
 #' @param offset name of the offset (if used)
 #' @param lambda lambda used to use the best model. 'lambda.min' will choose lambda that optimize cross-validation performances. 'lambda.1se' will choose the lambda that
 #' @param train.fraction fraction of data used to find the best model
 #' @param seq.lambda user provided sequences of lambda on which to performs the cross-validation
+#' @param nfolds The number of folds used for k-folds validation, default is 10.
 #' @return \code{lassoSelection} returns an object of class "LassoGLM", a list consisting
 #' \item{cvfit}{the returns object of the function \code{cv.glmnet} or \code{cv.HDtweedie} }
 #' \item{formula}{the formula of the best model found}
@@ -36,9 +37,8 @@
 #' \item{non_selected_features}{vector of character of the non selected features}
 #' @seealso \code{\link[HDtweedie]{cv.HDtweedie}}, \code{\link[glmnet]{cv.glmnet}}
 #' @examples
-#' data = cbind(subset(x = mtcars, select = -mpg),
-#'              y = mtcars$mpg)
-#' lassoSelection(data, type.measure = 'mse', family = 'gaussian', lambda = 'lambda.min', train.fraction = 1)
+#' data <- cbind(subset(x = mtcars, select = -mpg), y = mtcars$mpg)
+#' lassoSelection(data, type.measure = 'mse', family = 'gaussian', lambda = 'lambda.min')
 #' @export
 lassoSelection <- function(data = data, type.measure = "mse",
                            family = "gaussian", offset = NULL,

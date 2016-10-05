@@ -7,12 +7,13 @@ plotInteractionsMatrix <- function(mat.inter)
 }
 
 
-#' Taking sample for each level of factors
+#' Taking sample for each level of factors in a dataset
 #'
-#' Returns a training sample row names for a dataset taking draw in each level of the dataset
+#' Returns the row numbers of a training sample of a dataset making sure to draw in each level of the dataset
 #'
 #' @param data The dataset
-#' @seealso \code{\link[dplyr]{group_by}}
+#' @param train.fraction the fraction of the observations to be drawn in each level of the factors of the dataset
+#' @seealso \code{\link[dplyr]{group_by}} and \code{\link[dplyr]{sample_frac}} in \pkg{dplyr} package
 #' @export
 trainingSample <- function(data, train.fraction = 0.75){
   dots         <- colnames(data)[sapply(data, is.factor)]
@@ -85,10 +86,12 @@ rmse <- function(pred, true)
 
 #' Cleaning the data
 #'
-#' Removing variables with too much levels, too much NA, too few variance
+#' Removing variables with too much levels, too much NA, no variance, too much correlation.
 #' @param data the dataset
 #' @param n.levels the maximum number of levels allowed
 #' @param per.na the maximum percentage of missing data allowed for a variable
+#' @param na.string the name of the \code{NA} values in the data
+#' @param remove.cor used to remove variables which correlation is superior to this value
 #' @return A clean and neat dataset
 #' @export
 cleanData <- function(data, n.levels = 20, perc.na = 0.2, na.string = NULL, remove.cor = NULL)

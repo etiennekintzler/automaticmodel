@@ -2,17 +2,19 @@
 % Please edit documentation in R/misc_functions.R
 \name{trainingSample}
 \alias{trainingSample}
-\title{Taking sample for each level of factors}
+\title{Taking sample for each level of factors in a dataset}
 \usage{
 trainingSample(data, train.fraction = 0.75)
 }
 \arguments{
 \item{data}{The dataset}
+
+\item{train.fraction}{the fraction of the observations to be drawn in each level of the factors of the dataset}
 }
 \description{
-Returns a training sample row names for a dataset taking draw in each level of the dataset
+Returns the row numbers of a training sample of a dataset making sure to draw in each level of the dataset
 }
 \seealso{
-\code{\link[dplyr]{group_by}}
+\code{\link[dplyr]{group_by}} and \code{\link[dplyr]{sample_frac}} in \pkg{dplyr} package
 }
 

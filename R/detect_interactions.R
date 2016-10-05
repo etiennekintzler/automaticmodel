@@ -1,6 +1,6 @@
 # si n.sample est NULL, sinon faire du sampling
 #' @export
-computeInteractions2 <- function(gbm.model, data, importance.threshold = 0,
+computeInteractions <- function(gbm.model, data, importance.threshold = 0,
                                 n.sample = 1e4, max.select = NULL, interact.threshold = 0)
 {
   ### Selecting only the most important variables according to a threshold ###
@@ -21,7 +21,7 @@ computeInteractions2 <- function(gbm.model, data, importance.threshold = 0,
                                                             i.var   = i,
                                                             n.trees = best.iter))
   df.temp  <- data.frame(product.names, H)
-  mat.name <- df.temp[df.temp[, 3] > interact.threshold, ]
+  mat.name <- subset(x = df.temp, subset = (H > interact.threshold) & !is.nan(H))
   if (nrow(mat.name) == 0) {
     print("There is no interactions at this threshold")
     return(NULL)
@@ -119,7 +119,7 @@ glmPerformance <- function(data, gbm.model = gbm.model, formula.best, family,
 #faire juse GINI et RMSE à chaque fois. SI count.
 # Voir pour le calcul de la deviance hors-ech.
 
-getGlmPerformance2 <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05)),
+getGlmPerformance <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05)),
                               data, mat.name, gbm.model, formula.best, family,
                               train.fraction = .8, max.interactions = 50, include = F, speed = F)
 {
@@ -151,8 +151,25 @@ getGlmPerformance2 <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05
 #' @param formula.best the formula of the base model provided by the user or found in \code{\link{lassoSelection}}
 #' @param gbm.control a list containing the parameters passed to the Gradient Boosting model \itemize{
 #' \item{n.sample}{Number of points used to compute H-statistic}
+#' \item{train.fraction}{Fraction of the data used to compute OOB error}
+#' \item{shrinkage}{Shrinkage or learning rate of \code{gbm}}
+#' \item{bag.fraction}{Subsampling rate}
+#' \item{family}{distribution of the model, to see supported distribution please see \code{gbm} function}
+#' \item{n.trees}{Number of trees of \code{gbm}}
+#' \item{n.sample}{Number of observations drawn to compute the H-statistic, higher value slows down the computations}
+#' \item{n.sample}{Correponds to \code{interaction.depth} parameter in \code{gbm}}
+#' \item{importance.threshold}{The importance threshold at which the variables are selected to be tested as interactions}
+#' \item{max.select}{Maximum number of variables selected to be tested as interactions -related to previous item}
+#' }
+#' @param glm.control a list containing the parameters for the computation of the base model and augmented model using \code{glm}\itemize{
+#' \item train.fraction The fraction of the sample on which to train the GLM models
+#' \item family The family of the data passed as \code{glm} function
+#' \item include whether the user wants to include the univariate component of the interaction, default is False
+#' \item speed whether the user wants to include \code{\link[speedglm]{speedglm}}
+#' \item threshold.values The threshold values for the H-statistics
 #' }
 #'
+#' @seealso \code{\link[gbm]{glm}} for GLM modeling
 #' @seealso \code{\link[gbm]{gbm}} for GBM modeling
 #' @seealso \code{\link[gbm]{interact.gbm}} to compute H-statitic,
 #'
@@ -161,10 +178,10 @@ getGlmPerformance2 <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05
 #'
 #' @export
 detectInteractions <- function(data, max.interactions, formula.best, shuffle = F,
-                               gbm.control = list(train.fraction = .8, family, shrinkage = .01,
+                               gbm.control = list(train.fraction = .75, family, shrinkage = .01,
                                                   bag.fraction = .5, n.trees = 100, n.sample = 5e4, depth = 5,
                                                   importance.threshold = 0, max.select = 30),
-                               glm.control = list(train.fraction = .8, family, include = F, speed = F,
+                               glm.control = list(train.fraction = .75, family, include = F, speed = F,
                                                   threshold.values = c(0.01, seq(0.05, 1, by = 0.05))))
 {
   if (sum(sapply(data, function(x) length(unique(x)) <= 1)) > 0 ) {
@@ -179,7 +196,7 @@ detectInteractions <- function(data, max.interactions, formula.best, shuffle = F
 
   print("Computing interaction matrix")
   #computing friedman H matrix
-  mat.name <- computeInteractions2(gbm.model, data = data, importance.threshold = gbm.control$importance.threshold,
+  mat.name <- computeInteractions(gbm.model, data = data, importance.threshold = gbm.control$importance.threshold,
                                   n.sample = gbm.control$n.sample, max.select = gbm.control$max.select)
   cat('\n')
 
@@ -188,7 +205,7 @@ detectInteractions <- function(data, max.interactions, formula.best, shuffle = F
     mat.name[, 3] <- mat.name[sample(nrow(mat.name)), 3]
   }
   print('Fitting GLMs model')
-  GLMs.perf <- getGlmPerformance2(threshold.values = glm.control$threshold.values , data = data,
+  GLMs.perf <- getGlmPerformance(threshold.values = glm.control$threshold.values , data = data,
                                   mat.name = mat.name, gbm.model = gbm.model, formula.best = formula.best,
                                   family = glm.control$family, train.fraction = glm.control$train.fraction,
                                   max.interactions = max.interactions, include = glm.control$include,

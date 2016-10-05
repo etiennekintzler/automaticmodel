@@ -5,10 +5,10 @@
 \title{Detect interactions}
 \usage{
 detectInteractions(data, max.interactions, formula.best, shuffle = F,
-  gbm.control = list(train.fraction = 0.8, family, shrinkage = 0.01,
+  gbm.control = list(train.fraction = 0.75, family, shrinkage = 0.01,
   bag.fraction = 0.5, n.trees = 100, n.sample = 50000, depth = 5,
   importance.threshold = 0, max.select = 30),
-  glm.control = list(train.fraction = 0.8, family, include = F, speed = F,
+  glm.control = list(train.fraction = 0.75, family, include = F, speed = F,
   threshold.values = c(0.01, seq(0.05, 1, by = 0.05))))
 }
 \arguments{
@@ -18,6 +18,23 @@ detectInteractions(data, max.interactions, formula.best, shuffle = F,
 
 \item{gbm.control}{a list containing the parameters passed to the Gradient Boosting model \itemize{
 \item{n.sample}{Number of points used to compute H-statistic}
+\item{train.fraction}{Fraction of the data used to compute OOB error}
+\item{shrinkage}{Shrinkage or learning rate of \code{gbm}}
+\item{bag.fraction}{Subsampling rate}
+\item{family}{distribution of the model, to see supported distribution please see \code{gbm} function}
+\item{n.trees}{Number of trees of \code{gbm}}
+\item{n.sample}{Number of observations drawn to compute the H-statistic, higher value slows down the computations}
+\item{n.sample}{Correponds to \code{interaction.depth} parameter in \code{gbm}}
+\item{importance.threshold}{The importance threshold at which the variables are selected to be tested as interactions}
+\item{max.select}{Maximum number of variables selected to be tested as interactions -related to previous item}
+}}
+
+\item{glm.control}{a list containing the parameters for the computation of the base model and augmented model using \code{glm}\itemize{
+\item train.fraction The fraction of the sample on which to train the GLM models
+\item family The family of the data passed as \code{glm} function
+\item include whether the user wants to include the univariate component of the interaction, default is False
+\item speed whether the user wants to include \code{\link[speedglm]{speedglm}}
+\item threshold.values The threshold values for the H-statistics
 }}
 }
 \description{
@@ -30,6 +47,8 @@ Friedman, J. and Popescu B. (2005) \emph{Predictive Learning via Rule Ensembles}
 Firedman, J. (2009) \emph{Greedy Function Approximation : A Gradient Boosting Machine} \url{https://statweb.stanford.edu/~jhf/ftp/trebst.pdf}
 }
 \seealso{
+\code{\link[gbm]{glm}} for GLM modeling
+
 \code{\link[gbm]{gbm}} for GBM modeling
 
 \code{\link[gbm]{interact.gbm}} to compute H-statitic,

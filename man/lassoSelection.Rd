@@ -9,6 +9,8 @@ lassoSelection(data = data, type.measure = "mse", family = "gaussian",
   seq.lambda = NULL, nfolds = 10)
 }
 \arguments{
+\item{data}{the dataset}
+
 \item{type.measure}{the performance criterion use to perform cross-validation. Available values are 'mse', 'mae' (for regression), 'auc' (for classification) and deviance.}
 
 \item{family}{distribution of the target. Available family are 'gaussian', 'gamma', 'binomial', 'multinomial', 'cox', 'mgaussian'.}
@@ -20,6 +22,8 @@ lassoSelection(data = data, type.measure = "mse", family = "gaussian",
 \item{train.fraction}{fraction of data used to find the best model}
 
 \item{seq.lambda}{user provided sequences of lambda on which to performs the cross-validation}
+
+\item{nfolds}{The number of folds used for k-folds validation, default is 10.}
 }
 \value{
 \code{lassoSelection} returns an object of class "LassoGLM", a list consisting
@@ -34,13 +38,9 @@ lassoSelection(data = data, type.measure = "mse", family = "gaussian",
 \description{
 Finding the best model using 5-fold cross-validation using Lasso-GLM model.
 }
-\details{
-#' @param data the dataset
-}
 \examples{
-data = cbind(subset(x = mtcars, select = -mpg),
-             y = mtcars$mpg)
-lassoSelection(data, type.measure = 'mse', family = 'gaussian', lambda = 'lambda.min', train.fraction = 1)
+data <- cbind(subset(x = mtcars, select = -mpg), y = mtcars$mpg)
+lassoSelection(data, type.measure = 'mse', family = 'gaussian', lambda = 'lambda.min')
 }
 \seealso{
 \code{\link[HDtweedie]{cv.HDtweedie}}, \code{\link[glmnet]{cv.glmnet}}

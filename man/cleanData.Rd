@@ -12,12 +12,16 @@ cleanData(data, n.levels = 20, perc.na = 0.2, na.string = NULL,
 
 \item{n.levels}{the maximum number of levels allowed}
 
+\item{na.string}{the name of the \code{NA} values in the data}
+
+\item{remove.cor}{used to remove variables which correlation is superior to this value}
+
 \item{per.na}{the maximum percentage of missing data allowed for a variable}
 }
 \value{
 A clean and neat dataset
 }
 \description{
-Removing variables with too much levels, too much NA, too few variance
+Removing variables with too much levels, too much NA, no variance, too much correlation.
 }
 

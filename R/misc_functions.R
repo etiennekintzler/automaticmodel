@@ -1,4 +1,8 @@
-
+# faire une vignette avec portfolio example sur le README.
+# dans le package folder - 'doc' , mettre le markdown dont avc le regroupement des interactions
+# carrément inclure la data de portfolio_example ; regarder wickham rpackage
+# mettre un target = 'name'
+# permettre le log dans le string pour offset. Dire de mettre le vecteur dans les paramètres
 
 plotInteractionsMatrix <- function(mat.inter)
 {

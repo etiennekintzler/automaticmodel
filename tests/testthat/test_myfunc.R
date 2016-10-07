@@ -10,12 +10,17 @@ n <- nrow(df)
 
 #
 data <- axaml::portfolio_example
-df <- cbind(subset(x = data, select = -c(CalYear, Exposure, Numtpbi, Indtppd, Indtpbi, Numtppd, PolNum)),
-            y = data$Numtpbi) %>% axamodel::cleanData(n.levels = 10)
+df <- cbind(subset(x = data, select = -c(CalYear, Indtppd, Indtpbi, Numtppd, PolNum))) %>%
+  axamodel::cleanData(n.levels = 10)
 
 n = 5e4
+debugonce(lassoSelection)
 
-best <- lassoSelection(data = df[1:n, ], train.fraction = 1, family = 'poisson')
+best <- lassoSelection(data = df[1:n, ], target ='Numtpbi' ,
+                       train.fraction = 1, family = 'poisson', nlambda = 50)
+plotLambda(best)
+
+lassoSelection()
 plot(best)
 
 set.seed(124)

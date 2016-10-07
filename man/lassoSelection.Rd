@@ -4,26 +4,32 @@
 \alias{lassoSelection}
 \title{Finding the best lasso model}
 \usage{
-lassoSelection(data = data, type.measure = "mse", family = "gaussian",
-  offset = NULL, lambda = "lambda.min", train.fraction = 1,
-  seq.lambda = NULL, nfolds = 10)
+lassoSelection(data = data, type.measure = "deviance",
+  family = "gaussian", offset = NULL, lambda = "lambda.min",
+  train.fraction = 1, seq.lambda = NULL, nfolds = 10, target = NULL,
+  nlambda = 100)
 }
 \arguments{
-\item{data}{the dataset}
+\item{data}{the dataset used. It must include the target. The offset must be removed if presents.}
 
-\item{type.measure}{the performance criterion use to perform cross-validation. Available values are 'mse', 'mae' (for regression), 'auc' (for classification) and deviance.}
+\item{type.measure}{loss to use for the cross-validation. Available values are 'mse', 'mae' (for regression), 'auc' (for classification) and 'deviance'. Default is 'deviance'.}
 
 \item{family}{distribution of the target. Available family are 'gaussian', 'gamma', 'binomial', 'multinomial', 'cox', 'mgaussian'.}
 
-\item{offset}{name of the offset (if used)}
+\item{offset}{(optionnal) : the vector of the offset values. It should be the same length as the number of rows of the dataset supplied.}
 
-\item{lambda}{lambda used to use the best model. 'lambda.min' will choose lambda that optimize cross-validation performances. 'lambda.1se' will choose the lambda that}
+\item{lambda}{lambda used to use the best model. 'lambda.min' will choose lambda that optimize cross-validation performances.
+'lambda.1se' gives the most regularized model such that error is within one standard error of the minimum. Default is 'lambda.min'.}
 
-\item{train.fraction}{fraction of data used to find the best model}
+\item{train.fraction}{fraction of data used to find the best model. Default is 1.}
 
-\item{seq.lambda}{user provided sequences of lambda on which to performs the cross-validation}
+\item{seq.lambda}{(optionnal) user supplied lambda sequence}
 
-\item{nfolds}{The number of folds used for k-folds validation, default is 10.}
+\item{nfolds}{The number of folds used for k-folds validation. Default is 10.}
+
+\item{target}{the name of the target.}
+
+\item{nlambda}{the number of \code{lambda} values. Default is 100.}
 }
 \value{
 \code{lassoSelection} returns an object of class "LassoGLM", a list consisting

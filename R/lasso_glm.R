@@ -19,14 +19,17 @@
 #'
 #' Finding the best model using 5-fold cross-validation using Lasso-GLM model.
 #'
-#' @param data the dataset
-#' @param type.measure the performance criterion use to perform cross-validation. Available values are 'mse', 'mae' (for regression), 'auc' (for classification) and deviance.
+#' @param data the dataset used. It must include the target. The offset must be removed if presents.
+#' @param type.measure loss to use for the cross-validation. Available values are 'mse', 'mae' (for regression), 'auc' (for classification) and 'deviance'. Default is 'deviance'.
 #' @param family distribution of the target. Available family are 'gaussian', 'gamma', 'binomial', 'multinomial', 'cox', 'mgaussian'.
-#' @param offset name of the offset (if used)
-#' @param lambda lambda used to use the best model. 'lambda.min' will choose lambda that optimize cross-validation performances. 'lambda.1se' will choose the lambda that
-#' @param train.fraction fraction of data used to find the best model
-#' @param seq.lambda user provided sequences of lambda on which to performs the cross-validation
-#' @param nfolds The number of folds used for k-folds validation, default is 10.
+#' @param offset (optionnal) : the vector of the offset values. It should be the same length as the number of rows of the dataset supplied.
+#' @param lambda lambda used to use the best model. 'lambda.min' will choose lambda that optimize cross-validation performances.
+#' 'lambda.1se' gives the most regularized model such that error is within one standard error of the minimum. Default is 'lambda.min'.
+#' @param train.fraction fraction of data used to find the best model. Default is 1.
+#' @param seq.lambda (optionnal) user supplied lambda sequence
+#' @param nlambda the number of \code{lambda} values. Default is 100.
+#' @param target the name of the target.
+#' @param nfolds The number of folds used for k-folds validation. Default is 10.
 #' @return \code{lassoSelection} returns an object of class "LassoGLM", a list consisting
 #' \item{cvfit}{the returns object of the function \code{cv.glmnet} or \code{cv.HDtweedie} }
 #' \item{formula}{the formula of the best model found}
@@ -40,10 +43,11 @@
 #' data <- cbind(subset(x = mtcars, select = -mpg), y = mtcars$mpg)
 #' lassoSelection(data, type.measure = 'mse', family = 'gaussian', lambda = 'lambda.min')
 #' @export
-lassoSelection <- function(data = data, type.measure = "mse",
+lassoSelection <- function(data = data, type.measure = 'deviance',
                            family = "gaussian", offset = NULL,
                            lambda = "lambda.min", train.fraction = 1,
-                           seq.lambda = NULL, nfolds = 10){
+                           seq.lambda = NULL, nfolds = 10,
+                           target = NULL, nlambda = 100){
   data  <- na.omit(data)
   Xy    <- model.matrix( ~ . - 1 , data = data)
   train <- sample(nrow(data), floor(train.fraction * nrow(data)))
@@ -52,12 +56,21 @@ lassoSelection <- function(data = data, type.measure = "mse",
     cv.lasso      <- HDtweedie::cv.HDtweedie
     plot.lasso    <- HDtweedie:::plot.cv.HDtweedie
     predict.lasso <- HDtweedie:::predict.cv.HDtweedie
-    cv.control    <- list(pred.loss = type.measure, p = 2, nfolds = nfolds)
+    cv.control    <- list(pred.loss = type.measure, p = 2, nfolds = nfolds, nlambda = nlambda)
   } else {
     cv.lasso      <- glmnet::cv.glmnet
     plot.lasso    <- glmnet::plot.cv.glmnet
     predict.lasso <- glmnet::predict.cv.glmnet
-    cv.control    <- list(type.measure = type.measure, family=family, nfolds = nfolds)
+    cv.control    <- list(type.measure = type.measure, family=family, nfolds = nfolds, nlambda = nlambda)
+  }
+
+  if(family == 'gamma' && !is.null(offset) ){
+    stop('offset not allowed for gamma family')
+  }
+  if(!is.null(offset)){
+    if( typeof(offset) != 'double' && typeof(offset) != 'integer'){
+      stop("offset must be of type 'double' or 'integer'")
+    }
   }
 
   if(! is.null(seq.lambda)) {
@@ -66,8 +79,8 @@ lassoSelection <- function(data = data, type.measure = "mse",
   if (is.null(offset)) {
 
     ### Launching Cross validation LASSO ###
-    cvfit <- do.call(cv.lasso, c(list(x = subset(Xy[train, ], select = -c(y)),
-                                      y = Xy[train, "y"]), cv.control))
+    cvfit <- do.call(cv.lasso, c(list(x = subset(Xy[train, ], select = -get(target)),
+                                      y = Xy[train, target]), cv.control))
     #plot(cvfit)
     best.model <- coef(cvfit, s = lambda)
 
@@ -85,7 +98,6 @@ lassoSelection <- function(data = data, type.measure = "mse",
 
     best.features         <- colnames(data)[matching.index]
     non.selected.features <- colnames(data)[!matching.index]
-
     paste0('#features', length(best.features))
     if (length(best.features) < 1) {
       stop('Lasso has not selected any feature')
@@ -93,12 +105,14 @@ lassoSelection <- function(data = data, type.measure = "mse",
     #cat(paste0("\t", best.features, "\n"))
     concatenate.features <- paste(best.features, collapse = '+')
   } else {
+    if(length(offset) != nrow(data)){
+      stop("'offset' must have the same length as the number of rows in the dataset")
+    }
     ### Launching Cross validation LASSO ###
-    cvfit <- do.call(what = cv.lasso, args = c(list(x = subset(Xy[train, ], select = -c(get(offset), y)),
-                                                    y = Xy[train, "y"],
-                                                    offset = Xy[train, offset]),
+    cvfit <- do.call(what = cv.lasso, args = c(list(x = subset(Xy[train, ], select = -get(target)),
+                                                    y = Xy[train, target],
+                                                    offset = offset[train]),
                                                cv.control))
-
     best.model <- coef(cvfit, s = lambda)
 
     ### string work ###
@@ -123,14 +137,14 @@ lassoSelection <- function(data = data, type.measure = "mse",
                                   paste0("offset(", offset, ")"), sep = "+")
   }
 
-  formula.best <- paste('y', concatenate.features, sep = '~')
+  formula.best <- paste(target, concatenate.features, sep = '~')
   if (!is.null(offset)){
-    pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -c(y, get(offset))),
-                          offset = Xy[train, offset], s = lambda)
+    pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -get(target)),
+                          offset = offset[train], s = lambda)
   } else {
-    pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -y), s = lambda)
+    pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -get(target)), s = lambda)
   }
-  true <- Xy[train, 'y']
+  true <- Xy[train, target]
   output <- list(formula = formula.best, cvfit = cvfit, prediction = pred,
                  y = true, selected_features = best.features,
                  non_selected_features = non.selected.features)
@@ -173,7 +187,7 @@ summary.LassoGLM <- function(self){
 perf.LassoGLM <- function(self, format = 'pandoc')
 {
   rmse <- rmse(pred = self$prediction, true = self$y)
-  gini <- axaml::kpi_gini(predrisk = self$prediction, truerisk = self$y )
+  gini <- axaml::kpi_gini(predrisk = self$prediction, truerisk = self$y, significance = 4 )
   knitr::kable(data.frame('Root Mean Squared error' = rmse,
                           'Gini index' = as.numeric(gini)),
                caption = 'Performances of Lasso-GLM model',

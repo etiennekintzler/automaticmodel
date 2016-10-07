@@ -44,20 +44,20 @@ lassoSelection <- function(data = data, type.measure = "mse",
                            family = "gaussian", offset = NULL,
                            lambda = "lambda.min", train.fraction = 1,
                            seq.lambda = NULL, nfolds = 10){
-  data <- na.omit(data)
-  Xy <- model.matrix( ~ . - 1 , data = data)
+  data  <- na.omit(data)
+  Xy    <- model.matrix( ~ . - 1 , data = data)
   train <- sample(nrow(data), floor(train.fraction * nrow(data)))
 
   if(family == 'gamma'){
-    cv.lasso   <- HDtweedie::cv.HDtweedie
-    plot.lasso <- HDtweedie:::plot.cv.HDtweedie
+    cv.lasso      <- HDtweedie::cv.HDtweedie
+    plot.lasso    <- HDtweedie:::plot.cv.HDtweedie
     predict.lasso <- HDtweedie:::predict.cv.HDtweedie
-    cv.control <- list(pred.loss = type.measure, p = 2, nfolds = nfolds)
+    cv.control    <- list(pred.loss = type.measure, p = 2, nfolds = nfolds)
   } else {
-    cv.lasso   <- glmnet::cv.glmnet
-    plot.lasso <- glmnet::plot.cv.glmnet
+    cv.lasso      <- glmnet::cv.glmnet
+    plot.lasso    <- glmnet::plot.cv.glmnet
     predict.lasso <- glmnet::predict.cv.glmnet
-    cv.control <- list(type.measure = type.measure, family=family, nfolds = nfolds)
+    cv.control    <- list(type.measure = type.measure, family=family, nfolds = nfolds)
   }
 
   if(! is.null(seq.lambda)) {
@@ -75,7 +75,7 @@ lassoSelection <- function(data = data, type.measure = "mse",
 
     ### string work ###
     if (family == 'gamma'){
-      i.best <- which(best.model[, 1]!=0)
+      i.best         <- which(best.model[, 1]!=0)
       matching.index <- !is.na(charmatch(colnames(data), names(i.best)))
     } else {
       i.best          <- best.model@i
@@ -92,12 +92,9 @@ lassoSelection <- function(data = data, type.measure = "mse",
     }
     #cat(paste0("\t", best.features, "\n"))
     concatenate.features <- paste(best.features, collapse = '+')
-
   } else {
-
     ### Launching Cross validation LASSO ###
-    cvfit <- do.call(what = cv.lasso, args = c(list(x = subset(Xy[train, ],
-                                                               select = -c(get(offset), y)),
+    cvfit <- do.call(what = cv.lasso, args = c(list(x = subset(Xy[train, ], select = -c(get(offset), y)),
                                                     y = Xy[train, "y"],
                                                     offset = Xy[train, offset]),
                                                cv.control))
@@ -137,7 +134,6 @@ lassoSelection <- function(data = data, type.measure = "mse",
   output <- list(formula = formula.best, cvfit = cvfit, prediction = pred,
                  y = true, selected_features = best.features,
                  non_selected_features = non.selected.features)
-
   class(output) <- 'LassoGLM'
   return(output)
 }
@@ -162,7 +158,7 @@ summary.LassoGLM <- function(self){
   length(self$non_selected_features) <- max.length
   self$selected_features[is.na(self$selected_features)] <- ''
   self$non_selected_features[is.na(self$non_selected_features)] <- ''
-  knitr::kable(data.frame('Selected Features' = self$selected_features,
+  knitr::kable(data.frame('Selected Features'     = self$selected_features,
                           'Not Selected Features' = self$non_selected_features),
                caption = 'Features Selection', format = 'pandoc')
 }

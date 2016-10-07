@@ -9,7 +9,7 @@ detectInteractions(data, max.interactions, formula.best, shuffle = F,
   bag.fraction = 0.5, n.trees = 100, n.sample = 50000, depth = 5,
   importance.threshold = 0, max.select = 30),
   glm.control = list(train.fraction = 0.75, family, include = F, speed = F,
-  threshold.values = c(0.01, seq(0.05, 1, by = 0.05))))
+  threshold.values = c(0.01, seq(0.05, 1, by = 0.05)), seed = 2016))
 }
 \arguments{
 \item{data}{the dataset}

@@ -102,8 +102,6 @@ lassoSelection <- function(data = data, type.measure = 'deviance',
     if (length(best.features) < 1) {
       stop('Lasso has not selected any feature')
     }
-    #cat(paste0("\t", best.features, "\n"))
-    concatenate.features <- paste(best.features, collapse = '+')
   } else {
     if(length(offset) != nrow(data)){
       stop("'offset' must have the same length as the number of rows in the dataset")
@@ -132,12 +130,9 @@ lassoSelection <- function(data = data, type.measure = 'deviance',
     if (length(best.features) < 1) {
       stop('Lasso has not selected any feature')
     }
-    #cat(paste0("\t", best.features, "\n"))
-    concatenate.features <- paste(paste(best.features, collapse = '+'),
-                                  paste0("offset(", offset, ")"), sep = "+")
   }
 
-  formula.best <- paste(target, concatenate.features, sep = '~')
+  formula.best <- paste(target, paste(best.features, collapse = '+'), sep = '~')
   if (!is.null(offset)){
     pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -get(target)),
                           offset = offset[train], s = lambda)

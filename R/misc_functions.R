@@ -98,8 +98,13 @@ rmse <- function(pred, true)
 #' @param remove.cor used to remove variables which correlation is superior to this value
 #' @return A clean and neat dataset
 #' @export
-cleanData <- function(data, n.levels = 20, perc.na = 0.2, na.string = NULL, remove.cor = NULL)
+cleanData <- function(data, n.levels = 20, perc.na = 0.2, na.string = NULL, remove.cor = NULL, target = NULL)
 {
+  if (!is.null(remove.cor)){
+    if (is.null(target)){
+      "'target' name must be provided is 'remove.cor' is not 'NULL'"
+    }
+  }
   data <- data.frame(data)
   high.levels    <- sapply(data, function(x) length(levels(x)) > n.levels) #justifier dans rapport
   na.columns     <- sapply(data, function(x) sum(is.na(x)) > perc.na * nrow(data))

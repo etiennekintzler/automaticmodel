@@ -4,17 +4,21 @@
 \alias{detectInteractions}
 \title{Detect interactions using GBM modeling}
 \usage{
-detectInteractions(data, max.interactions, formula.best, shuffle = F,
-  gbm.control = list(train.fraction = 0.75, family, shrinkage = 0.01,
-  bag.fraction = 0.5, n.trees = 100, n.sample = 50000, depth = 5,
-  importance.threshold = 0, max.select = 30),
+detectInteractions(data, max.interactions, target = NULL, formula.best,
+  shuffle = F, offset = NULL, gbm.control = list(train.fraction = 0.75,
+  family, shrinkage = 0.01, bag.fraction = 0.5, n.trees = 100, n.sample = 50000,
+  depth = 5, importance.threshold = 0, max.select = 30),
   glm.control = list(train.fraction = 0.75, family, include = F, speed = F,
   threshold.values = c(0.01, seq(0.05, 1, by = 0.05)), seed = 2016))
 }
 \arguments{
 \item{data}{the dataset}
 
+\item{target}{the name of the target}
+
 \item{formula.best}{the formula of the base model provided by the user or found in \code{\link{lassoSelection}}}
+
+\item{offset}{the vector values of the offset}
 
 \item{gbm.control}{a list containing the parameters passed to the Gradient Boosting model \itemize{
 \item{n.sample}{Number of points used to compute H-statistic}

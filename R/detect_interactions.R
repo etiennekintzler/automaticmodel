@@ -50,7 +50,7 @@ computeInteractions <- function(gbm.model, data, importance.threshold = 0, max.s
 
 glmPerformance <- function(data, gbm.model = gbm.model, formula.best, family,
                            interact.threshold = 0, train.fraction = .8, mat.name,
-                           speed = F, include = F)
+                           speed = F, include = F, offset = NULL, target = NULL)
 {
   if (!is.null(speed)) {
     if(speed == T)  glm <- speedglm::speedglm
@@ -78,14 +78,18 @@ glmPerformance <- function(data, gbm.model = gbm.model, formula.best, family,
 
     cat("\t Computing Basemodel GLM \n")
     glm.model <- glm(formula = as.formula(formula.best),
-                     data    = data[train, ],
-                     family  = family)
+                     offset  = offset,
+                     data    = data,
+                     family  = family,
+                     subset  = train)
 
     cat("\t Computing Interaction Model GLM \n")
     formula.plus.interact <- paste(formula.best, interact.name, sep = "+")
     glm.model.plus        <- glm(formula = as.formula(formula.plus.interact),
-                                 data    = data[train, ],
-                                 family  = family)
+                                 offset  = offset,
+                                 data    = data,
+                                 family  = family,
+                                 subset  = train)
 
     cat("\t Computing the performance measure (RMSE and Gini) \n")
 
@@ -93,7 +97,7 @@ glmPerformance <- function(data, gbm.model = gbm.model, formula.best, family,
     pred.base <- predict(glm.model, newdata = data[ - train, ], type = "response")
     pred.plus <- predict(glm.model.plus, newdata = data[ - train, ], type = "response")
 
-    true <- data[ - train, "y"]
+    true      <- data[ - train, target]
     rmse.base <- rmse(pred.base, true)
     rmse.plus <- rmse(pred.plus, true)
     res.rmse  <- c("RMSE base" = round(rmse.base, 4), "RMSE plus" = round(rmse.plus, 4),
@@ -122,7 +126,8 @@ glmPerformance <- function(data, gbm.model = gbm.model, formula.best, family,
 
 allGlmPerformances <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05)),
                               data, mat.name, gbm.model, formula.best, family,
-                              train.fraction = .8, max.interactions = 50, include = F, speed = F, seed = 2016)
+                              train.fraction = .8, max.interactions = 50, include = F, speed = F, seed = 2016,
+                              offset = NULL, target = NULL)
 {
   l  <- sapply(1:length(threshold.values),
                function(i, x = threshold.values) {
@@ -137,7 +142,7 @@ allGlmPerformances <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05
                              glmPerformance(interact.threshold = threshold.values[i], train.fraction = train.fraction,
                                             gbm.model = gbm.model, formula.best = formula.best,
                                             mat.name = mat.name, data = data, family = family,
-                                            include = include, speed = speed)
+                                            include = include, speed = speed, offset = offset, target = target)
                              })
   return(stored.results)
 }
@@ -148,6 +153,8 @@ allGlmPerformances <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05
 #' Using Gradient Boosting Model and Friedman H-statistic to find interactions in the model.
 #' Comparison of the performances between the base model and the interactions-augmented model using root mean squared error and gini index.
 #' @param data the dataset
+#' @param target the name of the target
+#' @param offset the vector values of the offset
 #' @param formula.best the formula of the base model provided by the user or found in \code{\link{lassoSelection}}
 #' @param gbm.control a list containing the parameters passed to the Gradient Boosting model \itemize{
 #' \item{n.sample}{Number of points used to compute H-statistic}
@@ -179,7 +186,7 @@ allGlmPerformances <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05
 #' @references Firedman, J. (2009) \emph{Greedy Function Approximation : A Gradient Boosting Machine} \url{https://statweb.stanford.edu/~jhf/ftp/trebst.pdf}
 #'
 #' @export
-detectInteractions <- function(data, max.interactions, formula.best, shuffle = F,
+detectInteractions <- function(data, max.interactions, target = NULL ,formula.best, shuffle = F, offset = NULL,
                                gbm.control = list(train.fraction = .75, family, shrinkage = .01,
                                                   bag.fraction = .5, n.trees = 100, n.sample = 5e4, depth = 5,
                                                   importance.threshold = 0, max.select = 30),
@@ -189,9 +196,14 @@ detectInteractions <- function(data, max.interactions, formula.best, shuffle = F
   if (sum(sapply(data, function(x) length(unique(x)) <= 1)) > 0 ) {
     stop('No variation in at least one of the explanatory variable')
   }
+  if (is.null(target)){
+    stop("Please specify 'target' name")
+  }
   print("Fitting GBM Model")
   # Fitting GBM model
-  gbm.model <- gbm::gbm(y ~ . , distribution = gbm.control$family, data = data, n.trees = gbm.control$n.trees,
+  gbm.model <- gbm::gbm(formula = as.formula(paste(target, '.', sep = '~' )), offset = offset,
+                        distribution = gbm.control$family, data = data,
+                        n.trees = gbm.control$n.trees,
                         interaction.depth = gbm.control$depth, shrinkage = gbm.control$shrinkage,
                         bag.fraction = gbm.control$bag.fraction, verbose = T,
                         train.fraction = gbm.control$train.fraction)
@@ -207,11 +219,11 @@ detectInteractions <- function(data, max.interactions, formula.best, shuffle = F
     mat.name[, 3] <- mat.name[sample(nrow(mat.name)), 3]
   }
   print('Fitting GLMs model')
-  GLMs.perf <- allGlmPerformances(threshold.values = glm.control$threshold.values , data = data,
+  GLMs.perf <- allGlmPerformances(threshold.values = glm.control$threshold.values , data = data, offset = offset,
                                   mat.name = mat.name, gbm.model = gbm.model, formula.best = formula.best,
                                   family = glm.control$family, train.fraction = glm.control$train.fraction,
                                   max.interactions = max.interactions, include = glm.control$include,
-                                  speed = glm.control$speed, seed = glm.control$seed)
+                                  speed = glm.control$speed, seed = glm.control$seed, target = target)
   function.call <- as.list(sys.call())
 
   output        <- list(GLMs.perf         = GLMs.perf,

@@ -5,7 +5,7 @@
 \title{Cleaning the data}
 \usage{
 cleanData(data, n.levels = 20, perc.na = 0.2, na.string = NULL,
-  remove.cor = NULL)
+  remove.cor = NULL, target = NULL)
 }
 \arguments{
 \item{data}{the dataset}

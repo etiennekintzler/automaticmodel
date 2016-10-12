@@ -4,12 +4,12 @@
 \alias{detectInteractions}
 \title{Detect interactions using GBM modeling}
 \usage{
-detectInteractions(data, max.interactions, target = NULL, formula.best,
-  shuffle = F, offset = NULL, gbm.control = list(train.fraction = 0.75,
-  family, shrinkage = 0.01, bag.fraction = 0.5, n.trees = 100, n.sample = 50000,
-  depth = 5, importance.threshold = 0, max.select = 30),
-  glm.control = list(train.fraction = 0.75, family, include = F, speed = F,
-  threshold.values = c(0.01, seq(0.05, 1, by = 0.05)), seed = 2016))
+detectInteractions(data, target = NULL, formula.best, shuffle = F,
+  max.interactions = 30, offset = NULL, gbm.control = list(distribution,
+  n.trees = 100, interaction.depth = 5, shrinkage = 0.01, bag.fraction = 0.5,
+  train.fraction = 0.75, importance.threshold = 0, max.select = 30, n.sample =
+  50000), glm.control = list(family, train.fraction = 0.75, threshold.values =
+  c(0.01, seq(0.05, 1, by = 0.05)), seed = 1, include = F, speed = F))
 }
 \arguments{
 \item{data}{the dataset}
@@ -29,6 +29,7 @@ detectInteractions(data, max.interactions, target = NULL, formula.best,
 \item{n.trees}{Number of trees of \code{gbm}}
 \item{n.sample}{Number of observations drawn to compute the H-statistic, higher value slows down the computations}
 \item{n.sample}{Correponds to \code{interaction.depth} parameter in \code{gbm}}
+\item{interaction.depth}{The number of splits of each tree}
 \item{importance.threshold}{The importance threshold at which the variables are selected to be tested as interactions}
 \item{max.select}{Maximum number of variables selected to be tested as interactions -related to previous item}
 }}

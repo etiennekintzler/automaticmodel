@@ -165,6 +165,7 @@ allGlmPerformances <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05
 #' \item{n.trees}{Number of trees of \code{gbm}}
 #' \item{n.sample}{Number of observations drawn to compute the H-statistic, higher value slows down the computations}
 #' \item{n.sample}{Correponds to \code{interaction.depth} parameter in \code{gbm}}
+#' \item{interaction.depth}{The number of splits of each tree}
 #' \item{importance.threshold}{The importance threshold at which the variables are selected to be tested as interactions}
 #' \item{max.select}{Maximum number of variables selected to be tested as interactions -related to previous item}
 #' }
@@ -186,12 +187,27 @@ allGlmPerformances <- function(threshold.values = c(0.01, seq(0.05, 1, by = 0.05
 #' @references Firedman, J. (2009) \emph{Greedy Function Approximation : A Gradient Boosting Machine} \url{https://statweb.stanford.edu/~jhf/ftp/trebst.pdf}
 #'
 #' @export
-detectInteractions <- function(data, max.interactions, target = NULL ,formula.best, shuffle = F, offset = NULL,
-                               gbm.control = list(train.fraction = .75, family, shrinkage = .01,
-                                                  bag.fraction = .5, n.trees = 100, n.sample = 5e4, depth = 5,
-                                                  importance.threshold = 0, max.select = 30),
-                               glm.control = list(train.fraction = .75, family, include = F, speed = F,
-                                                  threshold.values = c(0.01, seq(0.05, 1, by = 0.05)), seed = 2016))
+detectInteractions <- function(data,
+                               target = NULL ,
+                               formula.best,
+                               shuffle = F,
+                               max.interactions = 30,
+                               offset = NULL,
+                               gbm.control = list(distribution,
+                                                  n.trees              = 100,
+                                                  interaction.depth    = 5,
+                                                  shrinkage            = .01,
+                                                  bag.fraction         = .5,
+                                                  train.fraction       = .75,
+                                                  importance.threshold = 0,
+                                                  max.select           = 30,
+                                                  n.sample             = 5e4),
+                               glm.control = list(family,
+                                                  train.fraction   = .75,
+                                                  threshold.values = c(0.01, seq(0.05, 1, by = 0.05)),
+                                                  seed             = 1,
+                                                  include          = F,
+                                                  speed            = F))
 {
   if (sum(sapply(data, function(x) length(unique(x)) <= 1)) > 0 ) {
     stop('No variation in at least one of the explanatory variable')
@@ -202,9 +218,9 @@ detectInteractions <- function(data, max.interactions, target = NULL ,formula.be
   print("Fitting GBM Model")
   # Fitting GBM model
   gbm.model <- gbm::gbm(formula = as.formula(paste(target, '.', sep = '~' )), offset = offset,
-                        distribution = gbm.control$family, data = data,
+                        distribution = gbm.control$distribution, data = data,
                         n.trees = gbm.control$n.trees,
-                        interaction.depth = gbm.control$depth, shrinkage = gbm.control$shrinkage,
+                        interaction.depth = gbm.control$interaction.depth, shrinkage = gbm.control$shrinkage,
                         bag.fraction = gbm.control$bag.fraction, verbose = T,
                         train.fraction = gbm.control$train.fraction)
 

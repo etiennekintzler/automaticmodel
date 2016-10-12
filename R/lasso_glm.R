@@ -23,7 +23,7 @@
 #' @param type.measure loss to use for the cross-validation. Available values are 'mse', 'mae' (for regression), 'auc' (for classification) and 'deviance'. Default is 'deviance'.
 #' @param family distribution of the target. Available family are 'gaussian', 'gamma', 'binomial', 'multinomial', 'cox', 'mgaussian'.
 #' @param offset (optionnal) : the vector of the offset values. It should be the same length as the number of rows of the dataset supplied.
-#' @param lambda lambda used to use the best model. 'lambda.min' will choose lambda that optimize cross-validation performances.
+#' @param lambda.type lambda used to use the best model. 'lambda.min' will choose lambda that optimize cross-validation performances.
 #' 'lambda.1se' gives the most regularized model such that error is within one standard error of the minimum. Default is 'lambda.min'.
 #' @param train.fraction fraction of data used to find the best model. Default is 1.
 #' @param seq.lambda (optionnal) user supplied lambda sequence
@@ -43,11 +43,16 @@
 #' data <- cbind(subset(x = mtcars, select = -mpg), y = mtcars$mpg)
 #' lassoSelection(data, type.measure = 'mse', family = 'gaussian', lambda = 'lambda.min')
 #' @export
-lassoSelection <- function(data = data, type.measure = 'deviance',
-                           family = "gaussian", offset = NULL,
-                           lambda = "lambda.min", train.fraction = 1,
-                           seq.lambda = NULL, nfolds = 10,
-                           target = NULL, nlambda = 100){
+lassoSelection <- function(data         = data,
+                           target       = NULL,
+                           family       = "gaussian",
+                           type.measure = 'deviance',
+                           offset       = NULL,
+                           lambda.type  = "lambda.min",
+                           seq.lambda   = NULL,
+                           nlambda      = 50,
+                           nfolds       = 5,
+                           train.fraction = 1){
   data  <- na.omit(data)
   Xy    <- model.matrix( ~ . - 1 , data = data)
   train <- sample(nrow(data), floor(train.fraction * nrow(data)))
@@ -82,7 +87,7 @@ lassoSelection <- function(data = data, type.measure = 'deviance',
     cvfit <- do.call(cv.lasso, c(list(x = subset(Xy[train, ], select = -get(target)),
                                       y = Xy[train, target]), cv.control))
     #plot(cvfit)
-    best.model <- coef(cvfit, s = lambda)
+    best.model <- coef(cvfit, s = lambda.type)
 
     #retirer l'exposure des var expl quand offset == NULL
 
@@ -111,7 +116,7 @@ lassoSelection <- function(data = data, type.measure = 'deviance',
                                                     y = Xy[train, target],
                                                     offset = offset[train]),
                                                cv.control))
-    best.model <- coef(cvfit, s = lambda)
+    best.model <- coef(cvfit, s = lambda.type)
 
     ### string work ###
     if (family == 'gamma'){
@@ -135,9 +140,9 @@ lassoSelection <- function(data = data, type.measure = 'deviance',
   formula.best <- paste(target, paste(best.features, collapse = '+'), sep = '~')
   if (!is.null(offset)){
     pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -get(target)),
-                          offset = offset[train], s = lambda)
+                          offset = offset[train], s = lambda.type)
   } else {
-    pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -get(target)), s = lambda)
+    pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -get(target)), s = lambda.type)
   }
   true <- Xy[train, target]
   output <- list(formula = formula.best, cvfit = cvfit, prediction = pred,

@@ -2,6 +2,9 @@
 
 This package automatically select features and detect interactions in GLM modeling framework.
 
+Vignette can be accessed via :
+`vignette(topic = 'my-vignette', package = 'axamodel')`
+
 #1. Features selection
 The selection of features is used using LASSO-GLM.
 

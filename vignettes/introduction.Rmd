@@ -4,16 +4,25 @@ author: "Etienne Kintzler"
 date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
-  toc : true 
+    toc : true 
+
 vignette: >
   %\VignetteIndexEntry{Vignette Title}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-This package aims at creating model for Generalized Linear Models (GLM). More specifically, it includes variable selection and interactions detection. The variable selection is performs with Least Absolute Shrinkage and Selection Operator (LASSO) applied to GLM. The interactions are detected with Gradient Tree Boosting (GTB) and Friedman’s H-statistic.
+```{r, include = F}
+knitr::opts_chunk$set(cache = TRUE, message = FALSE)
+```
 
-In this vignette the two principal functions of the package are presened : the lassoSelection function used to select variables and detectInteractions function used to detect interactions and compute the resulting gain in GLM modeling. We will used the dataset ‘portfolio_example’ in the package axaml.
+This package aims at creating model for *Generalized Linear Models* (GLM). More specifically, it includes variable selection and interactions detection. The variable selection is performs with *Least Absolute Shrinkage and Selection Operator* (LASSO) applied to GLM. The interactions are detected with *Gradient Tree Boosting* (GTB) and Friedman’s *H-statisti*c.
+
+In this vignette the two principal functions of the package are presened : 
+
+* the `lassoSelection` function used to select variables
+
+* the `detectInteractions` function used to detect interactions and compute the resulting gain in GLM modeling. 
 
 ## Installation
 
@@ -27,13 +36,16 @@ devtools::install_git('https://github.com/etiennekintzler/automaticmodel.git')
 or
 
 ```{r, eval = F}
-devtools::install_git('https://github.com/etiennekinthttps://github.axa.com/ds4a/axamodel.git')
+devtools::install_git('https://github.axa.com/ds4a/axamodel.git')
+```
+
+Also, this package use the development version of the package gbm which can be acquired using :
+
+```{r, eval = F}
+devtools::install_git('https://github.com/gbm-developers/gbm')
 ```
 
 
-```{r, include = F}
-knitr::opts_chunk$set(cache = TRUE, message = FALSE)
-```
 
 
 ```{r, include = T, echo = F, results = 'hide', message = F}
@@ -41,16 +53,9 @@ library(axamodel)
 library(dplyr)
 ```
 
-## 1.  Using `lassoSelection` to select variables
+### Loading the dataset
 
-### 1.1. Short introduction and function call
-The `lassoSelection` returns the best linear model using LASSO-GLM procedure. Lasso is $L_1$-penalized least squares and performs variable selection through shrinking some estimates to zero. The program solved is the following :
-\[
-\left\lVert A \right\rVert
-\]
-The value of $\lambda$ is determined using k-fold cross-validation. The criterion used for the cross-validation is passed to `lassoSelection` function with parameter `type.measure`.
-The `cleanData` function will clean the dataset removing variable with too many NA or too many levels.
-The target variable is the number of claims Numtpbi. The distribution is the following :
+We will use the dataset *portfolio_example* in the package axaml
 
 ```{r}
 data <- axaml::portfolio_example
@@ -58,26 +63,40 @@ df   <- subset(x = data, select = -c(CalYear, Indtppd, Indtpbi, Numtppd, PolNum)
   cleanData(n.levels = 10)
 ```
 
-```{r, echo = F}
-hist(df$Numtpbi, main = 'Histogram of Numtpbi', xlab = 'Numtpbi')
-```
+The `cleanData` function will clean the dataset removing variable with too many NA, too many levels, or too much correlation. The target variable is the number of claims `Numtpbi`, and takes its value in $\{0,1,2,4\}$. It will be thus modelled using poisson family.
 
-The variable takes value into $\mathbb{N}$ and will thus be modelled using poisson family. The function is based on `glmnet::cv.glmnet` for all the distributions except gamma and on `HDtweedie::cv.HDtweedie` for gamma family. We can on offset to the function except for the gamma family (since `HDtweedie::cv.HDtweedie` does not allow it). If the offset is provided it is necessary to remove it from the data passed to the function.
-The call for the lassoSelection is the following :
+
+## 1.  Using `lassoSelection` to select variables
+
+### 1.1. Short introduction 
+The `lassoSelection` returns the best linear model using LASSO-GLM procedure. Lasso is $L_1$-penalized least squares and performs variable selection through shrinking some estimates to zero. The program solved is the following :
+\[
+\min_\beta \left\lVert \mathbf{y}- \mathbf{X}\beta \right\rVert_2^2 + \left\lVert \beta\right\rVert_0
+\]
+The value of $\lambda$ is determined using k-fold cross-validation. The criterion used for the cross-validation is passed 
+to `lassoSelection` function with parameter `type.measure`.
+
+## 1.2. Function call
+
+The call for the `lassoSelection`is the following :
 
 ```{r, eval = T, echo = T, cache = T}
 best.glm <- lassoSelection(data           = df %>% select(-Exposure), 
                            type.measure   = 'deviance',
                            family         = 'poisson', 
-                           train.fraction = .1, 
                            lambda.type    = 'lambda.min',
                            target         = 'Numtpbi',
                            offset         = log(df$Exposure),
-                           nlambda        = 10)
+                           nlambda        = 10,
+                           nfold          = 5)
 ```
 
-The `train.fraction` represents the percentage of the observations used, default (1) will use all the observations. The parameter `lambda.type` can take two values, *lambda.min* or *lambda.1se*.
- 
+
+The function is based on `glmnet::cv.glmnet` for all the distributions but for gamma. For gamma distribution
+`HDtweedie::cv.HDtweedie` is used. 
+
+It is possible to add an offset to the function except for the gamma family (since `HDtweedie::cv.HDtweedie` does not enable it). If the offset is provided it is necessary to remove it from the data passed to the function.
+
 ### 1.2. Output diagnostic
 The output of `lassoSelection` will be on object of class `LassoGLM` which elements can be accessed and plot via differents methods. Four methods will be presented here:
 
@@ -102,13 +121,19 @@ The lambda that gives the most regularized model such that `type.measure` is wit
 perf(best.glm)
 ```
 
+The following method plot the Lorenz Curve and the resulting Gini index.
+
 ```{r}
 plot(best.glm)
 ```
 
+The following command returns the variable selected by the procedure
+
 ```{r}
 summary(best.glm)
 ```
+
+One can also access the formula of this *base model* using :
 
 ```{r}
 best.glm$formula
@@ -117,9 +142,27 @@ best.glm$formula
 
 
 ## 2. Detecting interactions
+
 The detection of interactions is performed by `detectInteractions` function.
-### 2.1. Function call
-```{r, eval = T, echo = T, cache = T}
+
+### 2.1. Short introduction
+
+An interaction between two variables is a form of *non-additivity* of the response function. Let $F(x_1, x_2)$ the response function, there is *no* interaction between $x_1$ and $x_2$ if the response function writes :
+$$F(x_1, x_2) = f_1(x_1)+ f_2(x_2) $$
+where $f_i$ is a function that only depends on the variable $i$.
+
+The *H-statistic* is a quantitty used within GBT framework to assess the presence of an interaction.
+Considerong, two variables $x_1$ and $x_2$, the quantity writes:
+
+\[
+H_{1,2} = \frac{\sum(\widehat{F}_{1,2}(x_1, x_2)-\widehat{F}_1(x_1) - \widehat{F}_2(x_2)  )^2}{\sum(\widehat{F}_{1,2}(x_1, x_2))^2}
+\]
+
+Where $F_s, s\subset \{1,..,n\}$ is the partial dependence function (see Friedman J.H. & Popescu, B. E. (2008). Predictive Learning via Rule Ensembles. *The Annals of Applied Statistics*, 916-954)
+
+### 2.2. Function call
+
+```{r, eval = T, echo = T, cache = T, results = "hide"}
 gbm.control <- list(distribution         = 'poisson', 
                     n.trees              = 3, 
                     interaction.depth    = 5, 
@@ -145,50 +188,44 @@ interactions <- detectInteractions(data             = df %>% select(-Exposure),
                                    glm.control      = glm.control)
 ```
 
+The *base model* is specified in formula form in the parameter *formula.best*. The formula can either but the output of `lassoSelection` or can be user defined. This *base model* is compared with the *augmented model* that includes interactions(s).
 
-The argument `formula.best` is the formula of the base model. This base model will be compared with the augmented model that will include interactions. This argument can either be the output of `lassoSelection` or can be user defined.
 
-The `gbm.control` argument takes the form of a list and contains the parameters necessary for fitting a gbm using `gbm::gbm` such as `train.fraction`, `shrinkage`, `bag.fraction`, `n.trees` and `distribution` and interaction.depth`.
+The `gbm.control` argument takes the form of a list and contains the parameters necessary for fitting a gbm using `gbm::gbm` such as `train.fraction`, `shrinkage`, `bag.fraction`, `n.trees` and `distribution` and `interaction.depth`.The other parameters in the list such as `importance.threshold`, `n.sample`, `max.select` are related to the computation of the *H-statistic*.
 
-The other parameters in the list such as importance.threshold, n.sample, max.select are related to the computation of the H-statistic:
-	•	importance.threshold is used to select variables that are importante enough. Default is 0.
-	•	n.sample is the number of observations used to compute H-statistic.
-	•	max.select is the maximum number of variable selected.
-	
-Thus `max.select` and `importance.threshold` are related to the number of variable which interaction value will be computed.
-The glm.control argument also takes the form of a list which parameters are :
-	•	family refers to the family used to fit the GLM
-	•	train.fraction is the fraction of the train sample.
+The `glm.control` argument also takes the form of a list and contains parameters used to fit a glm using `stats::glm`. The `threshold.values` is the threshold for the *H-statistic* according to which the interactions are selected. There are as much *augmented models* as elements in `threshold.values`. The **best** `augmented model` is the one that maximise the performance criterion (Gini index or RMSE).
 
-### 2.2. Output diagnostic
+### 2.3. Output diagnostic
 
 Four methods can be used to diagnostic the output of detectInteractions :
 
 * `perf` that compares the performance of the base model vs the augmented model.
 
-*`summary` give the interactions with the highest H-statistic value.
+* `summary` give the interactions with the highest H-statistic value.
 
-*`plotBest` plot the Lorenz curve of both the base model and the augmented model along with the gini gain.
+* `plotBest` plot the Lorenz curve of both the base model and the augmented model along with the gini gain.
 
-*`plot` is the interaction plot of the i-th best interaction
+* `plot` is the interaction plot of the i-th best interaction
 
-*`returnBest` return the best augmented model.
-
-
+* `returnBest` return the best *augmented model*.
 
 
 ```{r}
 perf(interactions)
 ```
 
+There is no substantial differences between the best *augmented model* and the *base model*.
+
 ```{r}
 summary(interactions)
 ```
+
+These are the interactions included in the best *augmented model*.
 
 ```{r}
 plot(interactions, simplify = 8)
 ```
 
-```{r}
-summary(interactions)
-```
+This is the interaction plot for the best interaction found
+(the best is the one with the highest *H-statistic*)
+

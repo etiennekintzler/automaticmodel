@@ -6,7 +6,7 @@
 \usage{
 lassoSelection(data = data, target = NULL, family = "gaussian",
   type.measure = "deviance", offset = NULL, lambda.type = "lambda.min",
-  seq.lambda = NULL, nlambda = 50, nfolds = 5, train.fraction = 1)
+  seq.lambda = NULL, nlambda = 50, nfolds = 5)
 }
 \arguments{
 \item{data}{the dataset used. It must include the target. The offset must be removed if presents.}
@@ -24,11 +24,9 @@ lassoSelection(data = data, target = NULL, family = "gaussian",
 
 \item{seq.lambda}{(optionnal) user supplied lambda sequence}
 
-\item{nlambda}{the number of \code{lambda} values. Default is 100.}
+\item{nlambda}{the number of \code{lambda} values. Default is 50.}
 
-\item{nfolds}{The number of folds used for k-folds validation. Default is 10.}
-
-\item{train.fraction}{fraction of data used to find the best model. Default is 1.}
+\item{nfolds}{The number of folds used for k-folds validation. Default is 5.}
 }
 \value{
 \code{lassoSelection} returns an object of class "LassoGLM", a list consisting

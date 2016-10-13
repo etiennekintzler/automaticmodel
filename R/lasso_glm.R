@@ -25,11 +25,10 @@
 #' @param offset (optionnal) : the vector of the offset values. It should be the same length as the number of rows of the dataset supplied.
 #' @param lambda.type lambda used to use the best model. 'lambda.min' will choose lambda that optimize cross-validation performances.
 #' 'lambda.1se' gives the most regularized model such that error is within one standard error of the minimum. Default is 'lambda.min'.
-#' @param train.fraction fraction of data used to find the best model. Default is 1.
 #' @param seq.lambda (optionnal) user supplied lambda sequence
-#' @param nlambda the number of \code{lambda} values. Default is 100.
+#' @param nlambda the number of \code{lambda} values. Default is 50.
 #' @param target the name of the target.
-#' @param nfolds The number of folds used for k-folds validation. Default is 10.
+#' @param nfolds The number of folds used for k-folds validation. Default is 5.
 #' @return \code{lassoSelection} returns an object of class "LassoGLM", a list consisting
 #' \item{cvfit}{the returns object of the function \code{cv.glmnet} or \code{cv.HDtweedie} }
 #' \item{formula}{the formula of the best model found}
@@ -51,11 +50,9 @@ lassoSelection <- function(data         = data,
                            lambda.type  = "lambda.min",
                            seq.lambda   = NULL,
                            nlambda      = 50,
-                           nfolds       = 5,
-                           train.fraction = 1){
+                           nfolds       = 5){
   data  <- na.omit(data)
   Xy    <- model.matrix( ~ . - 1 , data = data)
-  train <- sample(nrow(data), floor(train.fraction * nrow(data)))
 
   if(family == 'gamma'){
     cv.lasso      <- HDtweedie::cv.HDtweedie
@@ -81,11 +78,15 @@ lassoSelection <- function(data         = data,
   if(! is.null(seq.lambda)) {
     cv.control <- c(cv.control, lambda = list(seq.lambda))
   }
+  ifelse(family == 'gamma',
+         print('Using function HDtweedie::cv.HDtweedie to perform LASSO-GLM procedure'),
+         print('Using function glmnet::cv.glmnet to perform LASSO-GLM procedure'))
+
   if (is.null(offset)) {
 
     ### Launching Cross validation LASSO ###
-    cvfit <- do.call(cv.lasso, c(list(x = subset(Xy[train, ], select = -get(target)),
-                                      y = Xy[train, target]), cv.control))
+    cvfit <- do.call(cv.lasso, c(list(x = subset(Xy, select = -get(target)),
+                                      y = Xy[, target]), cv.control))
     #plot(cvfit)
     best.model <- coef(cvfit, s = lambda.type)
 
@@ -112,9 +113,9 @@ lassoSelection <- function(data         = data,
       stop("'offset' must have the same length as the number of rows in the dataset")
     }
     ### Launching Cross validation LASSO ###
-    cvfit <- do.call(what = cv.lasso, args = c(list(x = subset(Xy[train, ], select = -get(target)),
-                                                    y = Xy[train, target],
-                                                    offset = offset[train]),
+    cvfit <- do.call(what = cv.lasso, args = c(list(x = subset(Xy, select = -get(target)),
+                                                    y = Xy[, target],
+                                                    offset = offset),
                                                cv.control))
     best.model <- coef(cvfit, s = lambda.type)
 
@@ -139,12 +140,12 @@ lassoSelection <- function(data         = data,
 
   formula.best <- paste(target, paste(best.features, collapse = '+'), sep = '~')
   if (!is.null(offset)){
-    pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -get(target)),
-                          offset = offset[train], s = lambda.type)
+    pred <- predict.lasso(cvfit, newx = subset(Xy, select = -get(target)),
+                          offset = offset, s = lambda.type)
   } else {
-    pred <- predict.lasso(cvfit, newx = subset(Xy[train, ], select = -get(target)), s = lambda.type)
+    pred <- predict.lasso(cvfit, newx = subset(Xy, select = -get(target)), s = lambda.type)
   }
-  true <- Xy[train, target]
+  true <- Xy[, target]
   output <- list(formula = formula.best, cvfit = cvfit, prediction = pred,
                  y = true, selected_features = best.features,
                  non_selected_features = non.selected.features)

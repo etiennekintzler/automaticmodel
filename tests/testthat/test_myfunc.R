@@ -3,9 +3,8 @@ library(axamodel)
 library(dplyr)
 
 data(diabetes, package = 'lars')
-data <- cbind(data.frame(unclass(diabetes$x)), y = diabetes$y)
-df <- cbind(subset(x = data, select = -y),
-            y = data$y)
+data <- data.frame(unclass(diabetes$x), y = diabetes$y)
+
 n <- nrow(df)
 
 #
@@ -13,11 +12,10 @@ data <- axaml::portfolio_example
 df <- cbind(subset(x = data, select = -c(CalYear, Indtppd, Indtpbi, Numtppd, PolNum))) %>%
   axamodel::cleanData(n.levels = 10)
 
-n = 5e4
-debugonce(lassoSelection)
+best <- lassoSelection(data = df, target ='Numtpbi' ,family = 'poisson', nlambda = 20)
 
-best <- lassoSelection(data = df[1:n, ], target ='Numtpbi' ,
-                       train.fraction = 1, family = 'poisson', nlambda = 50)
+
+best <- lassoSelection(data = data, target ='y' ,family = 'poisson', nlambda = 20)
 plotLambda(best)
 
 lassoSelection()

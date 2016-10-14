@@ -54,7 +54,7 @@ lassoSelection <- function(data         = data,
   data  <- na.omit(data)
   Xy    <- model.matrix( ~ . - 1 , data = data)
 
-  if(family == 'gamma'){
+  if (family == 'gamma') {
     cv.lasso      <- HDtweedie::cv.HDtweedie
     plot.lasso    <- HDtweedie:::plot.cv.HDtweedie
     predict.lasso <- HDtweedie:::predict.cv.HDtweedie
@@ -66,16 +66,16 @@ lassoSelection <- function(data         = data,
     cv.control    <- list(type.measure = type.measure, family=family, nfolds = nfolds, nlambda = nlambda)
   }
 
-  if(family == 'gamma' && !is.null(offset) ){
+  if (family == 'gamma' && !is.null(offset) ) {
     stop('offset not allowed for gamma family')
   }
-  if(!is.null(offset)){
-    if( typeof(offset) != 'double' && typeof(offset) != 'integer'){
+  if (! is.null(offset)) {
+    if (typeof(offset) != 'double' && typeof(offset) != 'integer') {
       stop("offset must be of type 'double' or 'integer'")
     }
   }
 
-  if(! is.null(seq.lambda)) {
+  if (! is.null(seq.lambda)) {
     cv.control <- c(cv.control, lambda = list(seq.lambda))
   }
   ifelse(family == 'gamma',
@@ -121,7 +121,7 @@ lassoSelection <- function(data         = data,
 
     ### string work ###
     if (family == 'gamma'){
-      i.best <- which(best.model[, 1]!=0)
+      i.best <- which(best.model[, 1] != 0)
       matching.index <- !is.na(charmatch(colnames(data), names(i.best)))
     } else {
       i.best         <- best.model@i

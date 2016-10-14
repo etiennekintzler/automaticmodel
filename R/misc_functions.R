@@ -69,7 +69,7 @@ plotInteract <- function(x, y, data, rev = NULL, cut.x = NULL, cut.trace = NULL,
     }
   }
   interaction.plot(x.factor = xfactor, trace.factor = tracefactor,
-                   response = y, xlab = x[1], ylab = "y", trace.label = x[2],
+                   response = y, xlab = x[1], trace.label = x[2], ylab = "y",
                    col = 1:length(unique(tracefactor)), fixed = T,
                    main = paste('Interaction :', paste(x[1:2], collapse = '*'),
                                 '\n H-statistic :', round(as.numeric(x[3]), 4)))
@@ -105,22 +105,22 @@ cleanData <- function(data, n.levels = 20, perc.na = 0.2, na.string = NULL, remo
       "'target' name must be provided is 'remove.cor' is not 'NULL'"
     }
   }
-  data <- data.frame(data)
-  high.levels    <- sapply(data, function(x) length(levels(x)) > n.levels) #justifier dans rapport
-  na.columns     <- sapply(data, function(x) sum(is.na(x)) > perc.na * nrow(data))
-  date.col       <- grepl(pattern = 'date', x = colnames(data))
-  keep.columns   <- !(high.levels | na.columns | date.col)
-  data.temp      <- data[, keep.columns]
   if (!is.null(na.string)){
     data.temp[data.temp == na.string] <- NA
   }
-  data.temp <- na.omit(data.temp)
-  if (!is.null(remove.cor)) {
+  data           <- data.frame(data)
+  high.levels    <- sapply(data, function(x) length(levels(x)) > n.levels) #justifier dans rapport
+  na.columns     <- sapply(data, function(x) sum(is.na(x)) > perc.na * nrow(data))
+  date.col       <- grepl(pattern = 'date', x = colnames(data))
+  keep.columns   <- ! (high.levels | na.columns | date.col)
+  data.temp      <- data[, keep.columns]
+  if (! is.null(remove.cor)) {
+    data.temp      <- na.omit(data.temp)
     X                   <- subset(data.temp, select = -y)
     tmp                 <- cor(X[, sapply(X, is.numeric)])
     tmp[upper.tri(tmp)] <- 0
     diag(tmp)           <- 0
-    X.new               <- X[, ! apply(tmp, 2,function(x) any(x > remove.cor))]
+    X.new               <- X[, ! apply(tmp, 2, function(x) any(x > remove.cor))]
     data.temp           <- cbind(X.new, y = data.temp$y)
   }
   data.final <- as.data.frame(lapply(data.temp, function(x) if(is.factor(x)) factor(x) else x))

@@ -203,7 +203,7 @@ This *base model* is compared with the *augmented model* that includes interacti
 
 The `gbm.control` argument takes the form of a list and contains the parameters necessary for fitting a Gradient Tree Boosting model using `gbm::gbm` such as `train.fraction`, `shrinkage`, `bag.fraction`, `n.trees` and `distribution` and `interaction.depth`.The other parameters in the list such as `importance.threshold`, `n.sample`, `max.select` are related to the computation of the *H-statistic*.
 
-The `glm.control` argument also takes the form of a list and contains parameters used to fit a glm using `stats::glm`. The `threshold.values` is the *selection threshold* values for the *H-statistic* according to which the interactions are selected. There are as much *augmented models* as elements in `threshold.values`. The **best** `augmented model` is the one that maximise the performance criterion (*Gini index* or *Root Mean Squared Error* (RMSE)).
+The `glm.control` argument also takes the form of a list and contains parameters used to fit a glm using `stats::glm`. The `threshold.values` are the *selection threshold* values for the *H-statistic* according to which the interactions are selected. There are as much *augmented models* as elements in `threshold.values`. The **best** `augmented model` is the one that maximise the performance criterion (*Gini index* or *Root Mean Squared Error* (RMSE)).
 
 ### 2.3. Output diagnostic
 
